@@ -14,6 +14,7 @@ import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.RecipeManager;
 import net.minecraft.recipe.RecipeType;
 import net.minecraft.recipe.SmeltingRecipe;
+import net.minecraft.recipe.input.RecipeInput;
 import net.minecraft.recipe.input.SingleStackRecipeInput;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.PropertyDelegate;
@@ -102,62 +103,57 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity {
 
 		// Handle burn time logic for night
 		if (isDay) {
-			entity.currentNightBurnTime = entity.getNightBurnTime();  // Reset night burn time during the day
-		} else if (entity.currentNightBurnTime > 0) {
-			// Reduce night burn time if it's nighttime and the furnace is burning
-			int reductionRate = 2;  // Reduce night burn time slower
-			if (world.getTime() % reductionRate == 0) {
-				entity.currentNightBurnTime--;  // Decrease night burn time gradually
+			entity.currentNightBurnTime = entity.getNightBurnTime(); // Reset night burn time during the day
+		} else {
+			if (entity.currentNightBurnTime > 0) {
+				int reductionRate = 2;  // Adjust reduction rate as needed
+				if (world.getTime() % reductionRate == 0) {
+					entity.currentNightBurnTime--;  // Decrease night burn time gradually
+				}
 			}
 		}
 
 		boolean isBurning = entity.isBurning();
-		ItemStack input = entity.getInputSlot();
-		ItemStack output = entity.inventory.get(1);  // Get the output slot
+		ItemStack input = entity.getInputSlot(); // Get input item stack
+		ItemStack output = entity.inventory.get(2); // Output slot
 
 		// Check if there is input and output space
 		if (!input.isEmpty() && (output.isEmpty() || output.getCount() < 64)) {
 			if (isBurning) {
-				// Create a SimpleInventory with the input item for recipe matching
-				SimpleInventory inventory = new SimpleInventory(input);
-
-				Optional<SmeltingRecipe> recipe = world.getRecipeManager().getFirstMatch(
-					RecipeType.SMELTING, inventory, world);
+				Optional<SmeltingRecipe> recipe = world.getRecipeManager().getFirstMatch(RecipeType.SMELTING, new SingleStackRecipeInput(input), world).map(entry -> (SmeltingRecipe) entry.value());
 
 				if (recipe.isPresent()) {
 					entity.cookTime++;
 					if (entity.cookTime >= entity.getCookTimeTotal()) {
-						ItemStack result = recipe.get().getResult(world.getRegistryManager()).copy();
-						if (entity.smeltItem(result)) {
-							entity.incrementSmeltCount();  // Increment smelt count after smelting
+						ItemStack result = recipe.get().craft(new SingleStackRecipeInput(entity.getInputSlot()), world.getRegistryManager());
+
+						if (entity.smeltItem(result.copy())) {
+							entity.incrementSmeltCount();
 						}
-						entity.cookTime = 0;
-						dirty = true;
+						entity.cookTime = 0; // Reset cook time after successful smelting
+						dirty = true; // Mark the block as dirty for state update
 					}
 				} else {
-					entity.cookTime = 0;  // Reset cook time if no valid recipe
+					entity.cookTime = 0; // Reset cook time if no valid recipe is found
 				}
-			}
-
-			else {
-				entity.cookTime = 0;  // Reset cook time if not burning
+			} else {
+				entity.cookTime = 0; // Reset cook time if not burning
 			}
 		} else {
-			entity.cookTime = 0;  // Reset cook time if no input or output full
+			entity.cookTime = 0; // Reset cook time if no input or output full
 		}
 
-		// Update cook time and burn time in property delegate
+		// Update property delegate
 		entity.propertyDelegate.set(2, entity.cookTime);
 		entity.propertyDelegate.set(3, entity.getCookTimeTotal());
 
-		// Update furnace "lit" state based on burn status and burn time
+		// Update furnace state
 		if (dirty || isBurning != state.get(UltimateFurnaceBlock.LIT)) {
 			state = state.with(UltimateFurnaceBlock.LIT, isBurning);
 			world.setBlockState(pos, state, 3);
 			entity.markDirty();
 		}
 	}
-
 
 
 	private int getCookTimeTotal() {
@@ -223,27 +219,23 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity {
 	}
 
 	public boolean smeltItem(ItemStack output) {
-		ItemStack resultStack = this.inventory.get(2); // Assuming inventory[2] is the output slot
+		ItemStack resultStack = this.inventory.get(2); // Output slot
 
 		if (resultStack.isEmpty()) {
-			// If the output slot is empty, place the new stack directly
 			this.inventory.set(2, output.copy());
-			this.inventory.get(0).decrement(1); // Decrease input stack since the smelting is successful
+			this.inventory.get(0).decrement(1);
 			return true;
 		} else if (resultStack.isOf(output.getItem())) {
 			int newCount = resultStack.getCount() + output.getCount();
-
 			if (newCount <= 64) {
 				resultStack.increment(output.getCount());
-				this.inventory.get(0).decrement(1); // Decrease input stack since the smelting is successful
-				return true;
-			} else if (resultStack.getCount() < 64) {
-				// If adding items would exceed 64, only add as many as needed to reach 64
+			} else {
+				// Only add items needed to fill the output slot to 64
 				int itemsToAdd = 64 - resultStack.getCount();
 				resultStack.increment(itemsToAdd);
-				this.inventory.get(0).decrement(1); // Decrease input stack since the smelting is successful
-				return true;
 			}
+			this.inventory.get(0).decrement(1); // Decrease input stack since the smelting is successful
+			return true;
 		}
 		return false;
 	}

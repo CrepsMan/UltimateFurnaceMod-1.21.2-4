@@ -19,28 +19,20 @@ public class ModBlocks {
 
 	public static final Block ULTIMATE_FURNACE = registerBlock(
 		"ultimate_furnace",
-		new UltimateFurnaceBlock(AbstractBlock.Settings.create().requiresTool().strength(3.5F).luminance(createLightLevelFromLitBlockState())));
-
-
+		new UltimateFurnaceBlock(AbstractBlock.Settings.create().requiresTool().strength(3.5F).luminance(createLightLevelFromLitBlockState()))
+	);
 
 	private static ToIntFunction<BlockState> createLightLevelFromLitBlockState() {
 		return (state) -> state.get(Properties.LIT) ? 13 : 0;
 	}
 
 	private static Block registerBlock(String name, Block block) {
-		registerBlockItem(name, block);
-		Registry.register(Registries.BLOCK, Identifier.tryParse("modid:block_name"), blockInstance);
-	}
-
-	private static Item registerBlockItem(String name, Block block) {
-		return Registry.register(
-			RegistryKeys.ITEM,
-			Identifier.tryParse(UltimateFurnaceMod.MOD_ID, name),
-			new BlockItem(block, new Item.Settings())
-		);
+		return Registry.register(Registries.BLOCK, UltimateFurnaceMod.id(name), block);
 	}
 
 	public static void registerModBlocks() {
 		// Register all blocks here
+		// Register the Ultimate Furnace block
+		registerBlock("ultimate_furnace", ULTIMATE_FURNACE);
 	}
 }

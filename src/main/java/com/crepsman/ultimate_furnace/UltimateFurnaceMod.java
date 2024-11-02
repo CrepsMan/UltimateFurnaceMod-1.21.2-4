@@ -10,6 +10,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.block.Block;
 import net.minecraft.command.argument.BlockPosArgumentType;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +62,7 @@ public class UltimateFurnaceMod implements ModInitializer {
 						return 1;
 					}))
 			));
+
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 			dispatcher.register(literal("skipnight").requires(source -> source.hasPermissionLevel(2))
 				.executes(context -> {
@@ -70,6 +72,7 @@ public class UltimateFurnaceMod implements ModInitializer {
 					return 1;
 				}))
 		);
+
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 			dispatcher.register(literal("skipday").requires(source -> source.hasPermissionLevel(2))
 				.executes(context -> {
@@ -80,9 +83,13 @@ public class UltimateFurnaceMod implements ModInitializer {
 				}))
 		);
 
+		// Register blocks, block entities, and screen handlers
 		ModBlocks.registerModBlocks();
 		ModBlockEntities.registerBlockEntities();
 		ModScreenHandlers.registerScreenHandlers();
 	}
 
+	public static Identifier id(String path) {
+		return Identifier.tryParse(MOD_ID, path);
+	}
 }

@@ -53,11 +53,11 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 		builder.add(LIT, DAY_MODE, FACING);
 	}
 
-	@Nullable
-	@Override
-	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-		return checkType(type, ModBlockEntities.ULTIMATE_FURNACE_BLOCK_ENTITY, UltimateFurnaceBlockEntity::tick);
+	public void onBlockTick(World world, BlockPos pos, BlockState state, UltimateFurnaceBlockEntity furnaceBlockEntity) {
+		UltimateFurnaceBlockEntity.tick(world, pos, state, furnaceBlockEntity);
 	}
+
+
 
 	protected void openScreen(World world, BlockPos pos, PlayerEntity player) {
 		BlockEntity blockEntity = world.getBlockEntity(pos);
