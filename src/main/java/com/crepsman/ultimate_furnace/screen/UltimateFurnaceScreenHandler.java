@@ -38,7 +38,7 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 	}
 
 	// Override transferSlot to use custom logic
-	public ItemStack quickTransfer(PlayerEntity player, int fromIndex) {
+	public ItemStack quickMove(PlayerEntity player, int fromIndex) {
 		// Call custom transfer logic here
 		return customTransferStack(player, fromIndex);
 	}

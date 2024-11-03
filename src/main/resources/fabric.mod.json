@@ -16,7 +16,7 @@
 	"environment": "*",
 	"entrypoints": {
 		"main": [
-			"com.crepsman.UltimateFurnaceMod"
+			"com.crepsman.ultimate_furnace.UltimateFurnaceMod"
 		]
 	},
 	"mixins": [

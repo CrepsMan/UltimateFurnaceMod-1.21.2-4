@@ -1,8 +1,9 @@
 package com.crepsman.ultimate_furnace.registry;
 
 import com.crepsman.ultimate_furnace.screen.UltimateFurnaceScreenHandler;
+import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
-import net.minecraft.registry.RegistryKeys;
+import net.minecraft.resource.featuretoggle.FeatureSet;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.util.Identifier;
 
@@ -11,13 +12,12 @@ public class ModScreenHandlers {
 
 	static {
 		ULTIMATE_FURNACE_SCREEN_HANDLER = Registry.register(
-			RegistryKeys.SCREEN_HANDLER,
+			Registries.SCREEN_HANDLER,
 			Identifier.tryParse("ultimate_furnace", "ultimate_furnace"),
-			new ScreenHandlerType<>(UltimateFurnaceScreenHandler::new)
+			new ScreenHandlerType<>(UltimateFurnaceScreenHandler::new, FeatureSet.empty())
 		);
 	}
 
-	// Method to register screen handlers (can be extended in the future)
 	public static void registerScreenHandlers() {
 		// Registration is handled in static block
 	}
