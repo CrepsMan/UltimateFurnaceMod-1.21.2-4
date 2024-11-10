@@ -47,13 +47,18 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 	}
 
 	// Custom transfer stack logic
-	public ItemStack customTransferStack(PlayerEntity player, int fromIndex) {
+	public ItemStack quickMove(PlayerEntity player, int fromIndex) {
 		ItemStack newStack = ItemStack.EMPTY;
 		Slot slot = this.slots.get(fromIndex);
 
 		if (slot != null && slot.hasStack()) {
 			ItemStack originalStack = slot.getStack();
 			newStack = originalStack.copy();
+
+			// Ensure that fromIndex is within the valid range of slots
+			if (fromIndex < 0 || fromIndex >= this.slots.size()) {
+				return ItemStack.EMPTY;
+			}
 
 			// Custom logic for transferring items
 			if (fromIndex == 2) { // Output slot
@@ -96,6 +101,7 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		return newStack;
 	}
 
+
 	@Override
 	public float getCookProgress() {
 		int cookTime = customPropertyDelegate.get(2);
@@ -125,7 +131,7 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 
 		@Override
 		public boolean canInsert(ItemStack stack) {
-			return false;
+			return false; // Prevent insertion into output slot
 		}
 	}
 

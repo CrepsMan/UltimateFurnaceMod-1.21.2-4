@@ -19,7 +19,7 @@
 			"com.crepsman.ultimate_furnace.UltimateFurnaceMod"
 		],
     "client": [
-      "com.crepsman.ultimate_furnace.client.UltimateFurnaceClient"
+      "com.crepsman.ultimate_furnace.UltimateFurnaceModClient"
     ]
 	},
 	"mixins": [
