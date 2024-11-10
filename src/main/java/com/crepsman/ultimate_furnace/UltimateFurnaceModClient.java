@@ -14,4 +14,5 @@ public class UltimateFurnaceModClient implements ClientModInitializer {
 		HandledScreens.register(ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER, UltimateFurnaceScreen::new);
 
 	}
+
 }

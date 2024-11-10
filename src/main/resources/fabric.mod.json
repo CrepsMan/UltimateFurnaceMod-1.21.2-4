@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 1,
-	"id": "UltimateFurnace-Mod",
+	"id": "ultimatefurnacemod",
 	"version": "1.0",
 	"name": "Ultimate Furnace",
 	"description": "This is an example description! Tell everyone what your mod is about!",
@@ -17,10 +17,13 @@
 	"entrypoints": {
 		"main": [
 			"com.crepsman.ultimate_furnace.UltimateFurnaceMod"
-		]
+		],
+    "client": [
+      "com.crepsman.ultimate_furnace.client.UltimateFurnaceClient"
+    ]
 	},
 	"mixins": [
-		"template-mod.mixins.json"
+
 	],
 	"depends": {
 		"fabricloader": ">=0.16.7",
