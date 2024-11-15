@@ -16,3 +16,4 @@ public class UltimateFurnaceModClient implements ClientModInitializer {
 	}
 
 }
+
