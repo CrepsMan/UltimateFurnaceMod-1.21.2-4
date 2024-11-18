@@ -1,5 +1,6 @@
 package com.crepsman.ultimate_furnace.screen;
 
+import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.ingame.AbstractFurnaceScreen;
 import net.minecraft.client.gui.screen.recipebook.FurnaceRecipeBookScreen;
@@ -35,14 +36,26 @@ public class UltimateFurnaceScreen extends AbstractFurnaceScreen<UltimateFurnace
 		// Draw the smelting progress bar based on getSmeltingProgress()
 		int smeltingProgress = this.handler.getSmeltingProgress();
 		if (smeltingProgress > 0) {
-			int scaledProgressWidth = (smeltingProgress * 24) / 100;
-			context.drawTexture(TEXTURE, this.x + 79, this.y + 34, 176, 14, scaledProgressWidth + 1, 16);
+			context.drawTexture(TEXTURE, this.x + 79, this.y + 34, 176, 14, smeltingProgress + 1, 16);
 		}
 
-		int fuelProgress = (int) this.handler.getFuelProgress();
+		// Draw the fuel progress bar based on getFuelProgress()
+		float fuelProgress = this.handler.getFuelProgress();
 		if (fuelProgress > 0) {
-			int scaledFuelHeight = (fuelProgress * 13) / 100;
+			int scaledFuelHeight = (int) (fuelProgress * 13 / 100);
 			context.drawTexture(TEXTURE, this.x + 56, this.y + 36 + 12 - scaledFuelHeight, 176, 12 - scaledFuelHeight, 14, scaledFuelHeight + 1);
+		}
+
+		// Draw the smelt count progress bar based on getSmeltCountProgress()
+		int smeltCountProgress = this.handler.getSmeltCountProgress();
+		if (smeltCountProgress > 0) {
+			int scaledSmeltCountWidth = (int) (smeltCountProgress * 161 / 100);
+			context.drawTexture(TEXTURE, this.x + 7, this.y + 65, 0, 166, scaledSmeltCountWidth, 5);
+		}
+
+		// Draw the copper block overlay when burning
+		if (this.handler.isBurning()) {
+			context.drawTexture(TEXTURE, this.x + 56, this.y + 36, 176, 0, 14, 14);
 		}
 	}
 
@@ -55,13 +68,24 @@ public class UltimateFurnaceScreen extends AbstractFurnaceScreen<UltimateFurnace
 	protected void drawMouseoverTooltip(DrawContext context, int mouseX, int mouseY) {
 		super.drawMouseoverTooltip(context, mouseX, mouseY);
 
-		// Check if the mouse is over the smelt count text area
-		if (mouseX >= this.x + 8 && mouseX <= this.x + 8 + this.textRenderer.getWidth("Smelted:") &&
-			mouseY >= this.y + this.backgroundHeight - 104 && mouseY <= this.y + this.backgroundHeight - 104 + this.textRenderer.fontHeight) {
+		// Tooltip for the fire icon
+		if (mouseX >= this.x + 56 && mouseX <= this.x + 70 && mouseY >= this.y + 36 && mouseY <= this.y + 49) {
+			int storedPower = this.handler.getStoredPower();
+			int maxPower = UltimateFurnaceBlockEntity.BASE_MAX_STORED_POWER;
+			String tooltipText = "Stored Power: " + (storedPower * 100 / maxPower) + "%";
+			context.drawOrderedTooltip(this.textRenderer, Arrays.asList(Text.literal(tooltipText).asOrderedText()), mouseX, mouseY);
+		}
+
+		// Tooltip for the smelt count progress bar
+		if (mouseX >= this.x + 7 && mouseX <= this.x + 7 + 161 && mouseY >= this.y + 65 && mouseY <= this.y + 70) {
 			int smeltCount = this.handler.getSmeltCount();
 			int currentLevel = this.handler.getLevel();
-			String tooltipText = smeltCount + " / " + itemsPerLevel * currentLevel;
-			context.drawOrderedTooltip(this.textRenderer, Arrays.asList(Text.literal(tooltipText).asOrderedText()), mouseX, mouseY);
+			if (currentLevel > 0) {
+				String tooltipText = smeltCount + " / " + itemsPerLevel * currentLevel;
+				context.drawOrderedTooltip(this.textRenderer, Arrays.asList(Text.literal(tooltipText).asOrderedText()), mouseX, mouseY);
+			} else {
+				context.drawOrderedTooltip(this.textRenderer, Arrays.asList(Text.literal("Invalid level").asOrderedText()), mouseX, mouseY);
+			}
 		}
 	}
 }

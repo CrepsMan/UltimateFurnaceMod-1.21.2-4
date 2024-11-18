@@ -57,8 +57,6 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 		UltimateFurnaceBlockEntity.tick(world, pos, state, furnaceBlockEntity);
 	}
 
-
-
 	protected void openScreen(World world, BlockPos pos, PlayerEntity player) {
 		BlockEntity blockEntity = world.getBlockEntity(pos);
 		if (blockEntity instanceof UltimateFurnaceBlockEntity) {
@@ -75,6 +73,16 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 		}
 	}
 
+	@Nullable
+	@Override
+	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
+		return (world1, pos, state1, t) -> {
+			if (t instanceof UltimateFurnaceBlockEntity) {
+				UltimateFurnaceBlockEntity.tick(world1, pos, state1, (UltimateFurnaceBlockEntity) t);
+			}
+		};
+	}
+
 	public void updateDayMode(World world, BlockState state, BlockPos pos) {
 		boolean isDay = world.getTimeOfDay() % 24000 < 12000;
 
@@ -86,7 +94,7 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 	}
 
 	@Override
-	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, net.minecraft.util.math.random.Random random) {
+	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
 		boolean isDay = world.getTimeOfDay() % 24000 < 12000;
 
 		if (state.get(DAY_MODE) != isDay) {
@@ -106,23 +114,26 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		if (state.get(LIT)) {
 			double d = pos.getX() + 0.5;
-			double e = pos.getY() + 0.15;
+			double e = pos.getY() + 0.5; // Adjusted height for particles
 			double f = pos.getZ() + 0.5;
+
 			if (random.nextDouble() < 0.1) {
 				world.playSound(d, e, f, SoundEvents.BLOCK_FURNACE_FIRE_CRACKLE, SoundCategory.BLOCKS, 1.0F, 1.0F, false);
 			}
 
 			Direction direction = state.get(FACING);
 			Direction.Axis axis = direction.getAxis();
-			double g = 0.52;
-			double h = random.nextDouble() * 0.6 - 0.3;
-			double i = axis == Direction.Axis.X ? direction.getOffsetX() * 0.52 : h;
-			double j = random.nextDouble() * 6.0 / 16.0;
-			double k = axis == Direction.Axis.Z ? direction.getOffsetZ() * 0.52 : h;
+			double g = 0.52; // Offset distance
+			double h = random.nextDouble() * 0.6 - 0.3; // Horizontal randomization
+			double i = axis == Direction.Axis.X ? direction.getOffsetX() * g : h;
+			double j = random.nextDouble() * 0.6 + 0.2; // Vertical randomization (centered)
+			double k = axis == Direction.Axis.Z ? direction.getOffsetZ() * g : h;
+
 			world.addParticle(ParticleTypes.SMOKE, d + i, e + j, f + k, 0.0, 0.0, 0.0);
 			world.addParticle(ParticleTypes.FLAME, d + i, e + j, f + k, 0.0, 0.0, 0.0);
 		}
 	}
+
 
 	static {
 		DAY_MODE = ModProperties.DAY_MODE;

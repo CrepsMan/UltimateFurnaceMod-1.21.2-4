@@ -85,7 +85,6 @@ public class UltimateFurnaceMod implements ModInitializer {
 
 		// Register blocks, block entities, and screen handlers
 		ModBlocks.registerModBlocks();
-		ModBlocks.registerModBlockItems();
 		ModBlockEntities.registerModBlockEntities();
 	}
 
