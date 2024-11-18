@@ -114,7 +114,7 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
 		if (state.get(LIT)) {
 			double d = pos.getX() + 0.5;
-			double e = pos.getY() + 0.5; // Adjusted height for particles
+			double e = pos.getY() + 0.0; // Adjusted height for particles
 			double f = pos.getZ() + 0.5;
 
 			if (random.nextDouble() < 0.1) {
