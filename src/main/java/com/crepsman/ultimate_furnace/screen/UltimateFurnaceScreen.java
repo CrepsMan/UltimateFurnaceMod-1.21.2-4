@@ -55,7 +55,8 @@ public class UltimateFurnaceScreen extends AbstractFurnaceScreen<UltimateFurnace
 
 		// Draw the copper block overlay when burning
 		if (this.handler.isBurning()) {
-			context.drawTexture(TEXTURE, this.x + 56, this.y + 36, 176, 0, 14, 14);
+//			context.drawTexture(TEXTURE, this.x + 56, this.y + 36, 176, 0, 14, 14);
+			context.drawTexture(TEXTURE, this.x + 55, this.y + 52, 176, 31, 18, 5);
 		}
 	}
 
