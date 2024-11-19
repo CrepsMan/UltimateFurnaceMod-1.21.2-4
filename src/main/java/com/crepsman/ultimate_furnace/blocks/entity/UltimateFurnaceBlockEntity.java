@@ -80,6 +80,12 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		};
 	}
 
+	@Override
+	public boolean canExtract(int slot, ItemStack stack, Direction side) {
+		return slot != 0; // Prevent extraction from the input slot
+	}
+
+
 	public int getSmeltCount() {
 		return smeltCount;
 	}
@@ -109,23 +115,32 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	}
 
 	private void updateDaytimeBurning(World world, BlockPos pos) {
-		boolean hasSkylight = world.getLightLevel(LightType.SKY, pos.up()) > 0;
+		boolean hasDirectSkylight = world.getLightLevel(LightType.SKY, pos.up()) > 0;
 		boolean isDay = world.getTimeOfDay() % 24000 < 12000;
 
-		if (isDay && hasSkylight) {
-			this.storedPower = Math.min(this.storedPower + (level * 10), BASE_MAX_STORED_POWER * level);
+		int maxStoredPower = switch (this.level) {
+			case 1 -> 0;
+			case 2 -> 6000;
+			case 3 -> 8000;
+			case 4 -> 12000;
+			case 5 -> 18000;
+			default -> 0;
+		};
+
+		int powerGainRate = maxStoredPower / 12000; // Gain rate to fill up by the end of the day
+
+		if (isDay && hasDirectSkylight) {
+			this.storedPower = Math.min(this.storedPower + powerGainRate, maxStoredPower);
 			this.burnTime = Math.max(this.burnTime, 200); // Ensure some burn time remains
 		} else {
 			this.burnTime = Math.max(0, this.burnTime - 1);
 		}
 
-		// Update block state to reflect day/night mode
-		if (world.getBlockState(pos).get(ModProperties.DAY_MODE) != (isDay && hasSkylight)) {
-			world.setBlockState(pos, world.getBlockState(pos).with(ModProperties.DAY_MODE, isDay && hasSkylight), Block.NOTIFY_ALL);
+		// Update block state for visual feedback
+		if (world.getBlockState(pos).get(ModProperties.DAY_MODE) != (isDay && hasDirectSkylight)) {
+			world.setBlockState(pos, world.getBlockState(pos).with(ModProperties.DAY_MODE, isDay && hasDirectSkylight), Block.NOTIFY_ALL);
 		}
 	}
-
-
 	public static void tick(World world, BlockPos pos, BlockState state, UltimateFurnaceBlockEntity blockEntity) {
 		blockEntity.updateDaytimeBurning(world, pos);
 
@@ -182,6 +197,7 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			blockEntity.levelUp();
 		}
 	}
+
 	@Override
 	public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
 		super.writeNbt(nbt, lookup);
@@ -256,8 +272,14 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	}
 
 	private int getCookTime(World world) {
-		return this.world.getRecipeManager().getFirstMatch(RecipeType.SMELTING, new SingleStackRecipeInput(this.getStack(0)), world)
-			.map(recipe -> recipe.value().getCookingTime() / this.level).orElse(200 / this.level); // Decrease cook time based on level
+		return switch (this.level) {
+			case 1 -> 400; // 50% slower
+			case 2 -> 300; // 66% of normal speed
+			case 3 -> 200; // Normal speed
+			case 4 -> 100; // Twice the speed
+			case 5 -> 40;  // Five times the speed
+			default -> 200; // Fallback to normal speed
+		};
 	}
 
 	@Override

@@ -36,6 +36,11 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		this.slots.set(1, new UltimateFurnaceFuelSlot(this.inventory, 1, 56, 53));
 	}
 
+	public int getMaxSmeltCountForLevel() {
+		int level = getLevel();
+		return level < 5 ? ITEMS_PER_LEVEL * level : ITEMS_PER_LEVEL * 5;
+	}
+
 	public int getLevel() {
 		return customPropertyDelegate.get(1); // Assuming index 1 is for level
 	}

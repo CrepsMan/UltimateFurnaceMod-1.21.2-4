@@ -71,7 +71,14 @@ public class UltimateFurnaceScreen extends AbstractFurnaceScreen<UltimateFurnace
 		// Tooltip for the fire icon
 		if (mouseX >= this.x + 56 && mouseX <= this.x + 70 && mouseY >= this.y + 36 && mouseY <= this.y + 49) {
 			int storedPower = this.handler.getStoredPower();
-			int maxPower = UltimateFurnaceBlockEntity.BASE_MAX_STORED_POWER;
+			int maxPower = switch (this.handler.getLevel()) {
+				case 1 -> 0;
+				case 2 -> 6000;
+				case 3 -> 8000;
+				case 4 -> 12000;
+				case 5 -> 18000;
+				default -> 0;
+			};
 			String tooltipText = "Stored Power: " + (storedPower * 100 / maxPower) + "%";
 			context.drawOrderedTooltip(this.textRenderer, Arrays.asList(Text.literal(tooltipText).asOrderedText()), mouseX, mouseY);
 		}
@@ -80,12 +87,16 @@ public class UltimateFurnaceScreen extends AbstractFurnaceScreen<UltimateFurnace
 		if (mouseX >= this.x + 7 && mouseX <= this.x + 7 + 161 && mouseY >= this.y + 65 && mouseY <= this.y + 70) {
 			int smeltCount = this.handler.getSmeltCount();
 			int currentLevel = this.handler.getLevel();
-			if (currentLevel > 0) {
-				String tooltipText = smeltCount + " / " + itemsPerLevel * currentLevel;
-				context.drawOrderedTooltip(this.textRenderer, Arrays.asList(Text.literal(tooltipText).asOrderedText()), mouseX, mouseY);
+			int maxSmeltCount = this.handler.getMaxSmeltCountForLevel();
+			String tooltipText;
+
+			if (currentLevel < 5) {
+				tooltipText = smeltCount + " / " + maxSmeltCount + " to level " + (currentLevel + 1);
 			} else {
-				context.drawOrderedTooltip(this.textRenderer, Arrays.asList(Text.literal("Invalid level").asOrderedText()), mouseX, mouseY);
+				tooltipText = smeltCount + " / " + maxSmeltCount + " (Max level reached)";
 			}
+
+			context.drawOrderedTooltip(this.textRenderer, Arrays.asList(Text.literal(tooltipText).asOrderedText()), mouseX, mouseY);
 		}
 	}
 }
