@@ -1,9 +1,9 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "RDR",
+    "IDI",
     "RFR",
-    "CCC"
+    "CHC"
   ],
   "key": {
     "R": {
@@ -17,10 +17,16 @@
     },
     "C": {
       "item": "minecraft:copper_block"
+    },
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "H": {
+      "item": "ultimate_furnace:hot_plate"
     }
   },
   "result": {
-    "item": "ultimate_furnace:ultimate_furnace",
+    "id": "ultimate_furnace:ultimate_furnace",
     "count": 1
   }
 }

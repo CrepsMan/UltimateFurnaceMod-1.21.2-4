@@ -28,66 +28,79 @@ public class UltimateFurnaceMod implements ModInitializer {
 		LOGGER.info("Initializing Ultimate Furnace!");
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-			dispatcher.register(literal("setsmeltcount").requires(source -> source.hasPermissionLevel(2))
-				.then(argument("position", BlockPosArgumentType.blockPos())
-					.then(argument("set", IntegerArgumentType.integer(0, 15000))
-						.executes(context -> {
-							final int set = IntegerArgumentType.getInteger(context, "set");
-							final BlockPos pos = BlockPosArgumentType.getBlockPos(context, "position");
+			dispatcher.register(literal("ultimatefurnace")
+				.requires(source -> source.hasPermissionLevel(4)) // Only operators can use this command
+				.then(literal("set")
+					.then(literal("level")
+						.then(argument("level", IntegerArgumentType.integer(1, 5))
+							.then(argument("position", BlockPosArgumentType.blockPos())
+								.executes(context -> {
+									final int level = IntegerArgumentType.getInteger(context, "level");
+									final BlockPos pos = BlockPosArgumentType.getBlockPos(context, "position");
 
-							Block block = context.getSource().getWorld().getBlockState(pos).getBlock();
-							if (block == ModBlocks.ULTIMATE_FURNACE) {
-								UltimateFurnaceBlockEntity entity = context.getSource().getWorld().getBlockEntity(pos, ModBlockEntities.ULTIMATE_FURNACE_BLOCK_ENTITY).get();
-								entity.setSmeltCount(set);
-								context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.ultimate_furnace.set", entity.getSmeltCount()), true);
-							} else {
-								context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.ultimate_furnace.fail"), false);
-							}
-							return 1;
-						})))
-			));
+									Block block = context.getSource().getWorld().getBlockState(pos).getBlock();
+									if (block == ModBlocks.ULTIMATE_FURNACE) {
+										UltimateFurnaceBlockEntity entity = context.getSource().getWorld().getBlockEntity(pos, ModBlockEntities.ULTIMATE_FURNACE_BLOCK_ENTITY).get();
+										entity.setLevel(level);
+										context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.set.level", entity.getFurnaceLevel()), true);
+									} else {
+										context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.fail"), false);
+									}
+									return 1;
+								}))))
+					.then(literal("smeltcount")
+						.then(argument("smeltcount", IntegerArgumentType.integer(0, 15000))
+							.then(argument("position", BlockPosArgumentType.blockPos())
+								.executes(context -> {
+									final int smeltCount = IntegerArgumentType.getInteger(context, "smeltcount");
+									final BlockPos pos = BlockPosArgumentType.getBlockPos(context, "position");
 
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-			dispatcher.register(literal("getsmeltcount")
-				.then(argument("position", BlockPosArgumentType.blockPos())
-					.executes(context -> {
-						final BlockPos pos = BlockPosArgumentType.getBlockPos(context, "position");
-						Block block = context.getSource().getWorld().getBlockState(pos).getBlock();
-						if (block == ModBlocks.ULTIMATE_FURNACE) {
-							UltimateFurnaceBlockEntity entity = context.getSource().getWorld().getBlockEntity(pos, ModBlockEntities.ULTIMATE_FURNACE_BLOCK_ENTITY).get();
-							context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.ultimate_furnace.get", entity.getSmeltCount()), true);
-						} else {
-							context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.ultimate_furnace.fail"), false);
-						}
-						return 1;
-					}))
-			));
+									Block block = context.getSource().getWorld().getBlockState(pos).getBlock();
+									if (block == ModBlocks.ULTIMATE_FURNACE) {
+										UltimateFurnaceBlockEntity entity = context.getSource().getWorld().getBlockEntity(pos, ModBlockEntities.ULTIMATE_FURNACE_BLOCK_ENTITY).get();
+										entity.setSmeltCount(smeltCount);
+										context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.set.count", entity.getSmeltCount()), true);
+									} else {
+										context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.fail"), false);
+									}
+									return 1;
+								}))))
+					.then(literal("storedPower")
+						.then(argument("storedPower", IntegerArgumentType.integer(0, 18000))
+							.then(argument("position", BlockPosArgumentType.blockPos())
+								.executes(context -> {
+									final int storedPower = IntegerArgumentType.getInteger(context, "storedPower");
+									final BlockPos pos = BlockPosArgumentType.getBlockPos(context, "position");
 
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-			dispatcher.register(literal("skipnight").requires(source -> source.hasPermissionLevel(2))
-				.executes(context -> {
-					long l;
-					l = context.getSource().getWorld().getTimeOfDay() + 24000L;
-					context.getSource().getWorld().setTimeOfDay(l - l % 24000L);
-					return 1;
-				}))
-		);
-
-		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
-			dispatcher.register(literal("skipday").requires(source -> source.hasPermissionLevel(2))
-				.executes(context -> {
-					long l;
-					l = context.getSource().getWorld().getTimeOfDay() + 24000L;
-					context.getSource().getWorld().setTimeOfDay(l - l % 12000L);
-					return 1;
-				}))
-		);
+									Block block = context.getSource().getWorld().getBlockState(pos).getBlock();
+									if (block == ModBlocks.ULTIMATE_FURNACE) {
+										UltimateFurnaceBlockEntity entity = context.getSource().getWorld().getBlockEntity(pos, ModBlockEntities.ULTIMATE_FURNACE_BLOCK_ENTITY).get();
+										entity.setStoredPower(storedPower);
+										context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.set.power", entity.getStoredPower()), true);
+									} else {
+										context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.fail"), false);
+									}
+									return 1;
+								})))))
+					.then(literal("get")
+						.then(argument("position", BlockPosArgumentType.blockPos())
+							.executes(context -> {
+								final BlockPos pos = BlockPosArgumentType.getBlockPos(context, "position");
+								Block block = context.getSource().getWorld().getBlockState(pos).getBlock();
+								if (block == ModBlocks.ULTIMATE_FURNACE) {
+									UltimateFurnaceBlockEntity entity = context.getSource().getWorld().getBlockEntity(pos, ModBlockEntities.ULTIMATE_FURNACE_BLOCK_ENTITY).get();
+									context.getSource().sendFeedback(() -> Text.literal("Level: " + entity.getFurnaceLevel() + ", Smelt Count: " + entity.getSmeltCount() + ", Stored Power: " + entity.getStoredPower()), true);
+								} else {
+									context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.fail"), false);
+								}
+								return 1;
+							})))
+				));
 
 		// Register blocks, block entities, and screen handlers
 		ModBlocks.registerModBlocks();
 		ModBlockEntities.registerModBlockEntities();
 	}
-
 	public static Identifier id(String path) {
 		return Identifier.tryParse(MOD_ID, path);
 	}

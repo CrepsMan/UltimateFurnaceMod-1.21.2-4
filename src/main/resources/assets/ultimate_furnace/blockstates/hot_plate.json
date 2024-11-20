@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "lit=false": { "model": "ultimate_furnace:block/hot_plate" },
+    "lit=true": { "model": "ultimate_furnace:block/hot_plate_lit" }
+  }
+}

@@ -34,7 +34,6 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	private static final Logger LOGGER = Logger.getLogger(UltimateFurnaceBlockEntity.class.getName());
 	private static final int MAX_LEVEL = 5;
 	private static final int ITEMS_PER_LEVEL = 3000;
-	public static int BASE_MAX_STORED_POWER = 10000;
 
 	private int smeltCount = 0;
 	private int level = 1;
@@ -85,7 +84,6 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		return slot != 0; // Prevent extraction from the input slot
 	}
 
-
 	public int getSmeltCount() {
 		return smeltCount;
 	}
@@ -106,41 +104,38 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		this.smeltCount = count;
 	}
 
-	public boolean isBurning() {
-		return this.burnTime > 0;
+	public void setLevel(int level) {
+		this.level = level;
 	}
 
-	public void resetSmelting() {
-		this.smeltCount = 0;
+	public boolean isBurning() {
+		return this.burnTime > 0;
 	}
 
 	private void updateDaytimeBurning(World world, BlockPos pos) {
 		boolean hasDirectSkylight = world.getLightLevel(LightType.SKY, pos.up()) > 0;
 		boolean isDay = world.getTimeOfDay() % 24000 < 12000;
 
-		int maxStoredPower = switch (this.level) {
-			case 1 -> 0;
-			case 2 -> 6000;
-			case 3 -> 8000;
-			case 4 -> 12000;
-			case 5 -> 18000;
-			default -> 0;
+		int maxStoredPower = getMaxStoredPower(this.level);
+
+		float powerGainRate = switch (this.level) {
+			case 2 -> 1.0f;
+			case 3 -> 2.0f;
+			case 4 -> 4.0f;
+			case 5 -> 5.0f;
+			default -> 0.0f;
 		};
 
-		int powerGainRate = maxStoredPower / 12000; // Gain rate to fill up by the end of the day
-
-		if (isDay && hasDirectSkylight) {
-			this.storedPower = Math.min(this.storedPower + powerGainRate, maxStoredPower);
-			this.burnTime = Math.max(this.burnTime, 200); // Ensure some burn time remains
-		} else {
-			this.burnTime = Math.max(0, this.burnTime - 1);
+		if (isDay && hasDirectSkylight && this.level > 1 && this.storedPower < maxStoredPower) {
+			this.storedPower = (int) Math.min((float) this.storedPower + powerGainRate, maxStoredPower);
 		}
-
-		// Update block state for visual feedback
-		if (world.getBlockState(pos).get(ModProperties.DAY_MODE) != (isDay && hasDirectSkylight)) {
+		// Update block state for visual feedback only if it has changed
+		boolean currentDayMode = world.getBlockState(pos).get(ModProperties.DAY_MODE);
+		if (currentDayMode != (isDay && hasDirectSkylight)) {
 			world.setBlockState(pos, world.getBlockState(pos).with(ModProperties.DAY_MODE, isDay && hasDirectSkylight), Block.NOTIFY_ALL);
 		}
 	}
+
 	public static void tick(World world, BlockPos pos, BlockState state, UltimateFurnaceBlockEntity blockEntity) {
 		blockEntity.updateDaytimeBurning(world, pos);
 
@@ -159,7 +154,18 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		if (hasInput && canSmelt) {
 			Optional<RecipeEntry<SmeltingRecipe>> recipeEntry = blockEntity.getFirstMatch(new SingleStackRecipeInput(inputStack), world);
 			if (recipeEntry.isPresent()) {
-				if (!isBurning && blockEntity.storedPower > 0) {
+				boolean isDay = world.getTimeOfDay() % 24000 < 12000;
+				boolean hasDirectSkylight = world.getLightLevel(LightType.SKY, pos.up()) > 0;
+
+				if (isDay && hasDirectSkylight) {
+					blockEntity.burnTime = blockEntity.getCookTime(world);
+					blockEntity.cookTimeTotal = blockEntity.burnTime;
+					stateChanged = true;
+				} else if (!isBurning && blockEntity.storedPower > 0) {
+					blockEntity.burnTime = blockEntity.getCookTime(world);
+					blockEntity.cookTimeTotal = blockEntity.burnTime;
+					stateChanged = true;
+				} else if (!isBurning && blockEntity.level == 1 && isDay && hasDirectSkylight) {
 					blockEntity.burnTime = blockEntity.getCookTime(world);
 					blockEntity.cookTimeTotal = blockEntity.burnTime;
 					stateChanged = true;
@@ -182,8 +188,17 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			}
 		} else {
 			blockEntity.cookTime = 0;
+			if (!hasInput) {
+				blockEntity.burnTime = 0; // Reset burn time only if no input
+			}
 		}
 
+		// Consume storedPower when not in day mode
+		if (!world.getBlockState(pos).get(ModProperties.DAY_MODE) && blockEntity.storedPower > 0) {
+			blockEntity.storedPower = Math.max(0, blockEntity.storedPower - 1);
+		}
+
+		// Ensure the furnace does not turn off and on rapidly
 		if (isBurning != blockEntity.isBurning()) {
 			world.setBlockState(pos, state.with(AbstractFurnaceBlock.LIT, blockEntity.isBurning()), Block.NOTIFY_ALL);
 			stateChanged = true;
@@ -197,7 +212,6 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			blockEntity.levelUp();
 		}
 	}
-
 	@Override
 	public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
 		super.writeNbt(nbt, lookup);
@@ -297,7 +311,26 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		return new UltimateFurnaceScreenHandler(syncId, playerInventory, this, this.propertyDelegate);
 	}
 
+	public void setStoredPower(int storedPower) {
+		this.storedPower = storedPower;
+	}
+
 	public int getFuelProgress() {
 		return burnTime > 0 ? 100 : 0;
+	}
+
+	public int getStoredPower() {
+		return storedPower;
+	}
+
+	public static int getMaxStoredPower(int level) {
+		return switch (level) {
+			case 1 -> 0;
+			case 2 -> 6000;
+			case 3 -> 8000;
+			case 4 -> 12000;
+			case 5 -> 18000;
+			default -> 0;
+		};
 	}
 }

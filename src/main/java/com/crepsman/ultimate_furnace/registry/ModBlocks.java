@@ -1,6 +1,7 @@
 package com.crepsman.ultimate_furnace.registry;
 
 import com.crepsman.ultimate_furnace.UltimateFurnaceMod;
+import com.crepsman.ultimate_furnace.blocks.HotPlateBlock;
 import com.crepsman.ultimate_furnace.blocks.UltimateFurnaceBlock;
 import net.minecraft.block.Block;
 import net.minecraft.item.BlockItem;
@@ -12,6 +13,7 @@ import net.minecraft.block.Blocks;
 
 public class ModBlocks {
 	public static final Block ULTIMATE_FURNACE =registerBlocks("ultimate_furnace", new UltimateFurnaceBlock(Block.Settings.copy(Blocks.FURNACE)));
+	public static final Block HOT_PLATE =registerBlocks("hot_plate", new HotPlateBlock(Block.Settings.copy(Blocks.COPPER_BLOCK)));
 
 	public static Block registerBlocks(String name, Block block) {
 		registerBlockItems(name, block);

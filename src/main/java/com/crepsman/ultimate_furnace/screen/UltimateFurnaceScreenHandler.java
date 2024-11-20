@@ -66,12 +66,8 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 	public int getSmeltCountProgress() {
 		int smeltCount = customPropertyDelegate.get(0);
 		int level = customPropertyDelegate.get(1);
-		return smeltCount * 100 / (ITEMS_PER_LEVEL * level);
-	}
-
-	@Override
-	protected boolean isSmeltable(ItemStack itemStack) {
-		return this.world.getRecipeManager().getFirstMatch(RecipeType.SMELTING, new SingleStackRecipeInput(itemStack), this.world).isPresent();
+		int maxSmeltCount = ITEMS_PER_LEVEL * level;
+		return maxSmeltCount > 0 ? smeltCount * 100 / maxSmeltCount : 0;
 	}
 
 	public int getSmeltingProgress() {
@@ -79,16 +75,18 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		int cookTime = customPropertyDelegate.get(4);       // Fetch cookTime
 		int cookTimeTotal = customPropertyDelegate.get(5);  // Fetch cookTimeTotal
 
-		if (cookTimeTotal == 0) return 0; // Prevent division by zero
-		return (int) ((cookTime / (float) cookTimeTotal) * progressBarWidth);
+		return cookTimeTotal > 0 ? (int) ((cookTime / (float) cookTimeTotal) * progressBarWidth) : 0;
 	}
 
-
+	@Override
+	protected boolean isSmeltable(ItemStack itemStack) {
+		return this.world.getRecipeManager().getFirstMatch(RecipeType.SMELTING, new SingleStackRecipeInput(itemStack), this.world).isPresent();
+	}
 
 	public float getFuelProgress() {
 		int burnTime = customPropertyDelegate.get(2);
 		int storedPower = customPropertyDelegate.get(3);
-		int maxPower = UltimateFurnaceBlockEntity.BASE_MAX_STORED_POWER;
+		int maxPower = UltimateFurnaceBlockEntity.getMaxStoredPower(getLevel());
 		return (burnTime > 0 ? burnTime : storedPower) * 100.0f / maxPower;
 	}
 
@@ -124,5 +122,7 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		public int size() {
 			return data.length;
 		}
+
+
 	}
 }
