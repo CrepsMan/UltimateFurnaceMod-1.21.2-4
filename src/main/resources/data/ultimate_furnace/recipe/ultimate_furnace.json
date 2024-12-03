@@ -6,24 +6,12 @@
     "CHC"
   ],
   "key": {
-    "R": {
-      "item": "minecraft:redstone"
-    },
-    "D": {
-      "item": "minecraft:daylight_detector"
-    },
-    "F": {
-      "item": "minecraft:furnace"
-    },
-    "C": {
-      "item": "minecraft:copper_block"
-    },
-    "I": {
-      "item": "minecraft:iron_block"
-    },
-    "H": {
-      "item": "ultimate_furnace:hot_plate"
-    }
+    "R": "minecraft:redstone",
+    "D": "minecraft:daylight_detector",
+    "F": "minecraft:furnace",
+    "C": "minecraft:copper_block",
+    "I": "minecraft:iron_block",
+    "H": "ultimate_furnace:hot_plate"
   },
   "result": {
     "id": "ultimate_furnace:ultimate_furnace",

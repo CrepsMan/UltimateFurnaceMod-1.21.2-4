@@ -6,14 +6,18 @@ import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
+import net.minecraft.recipe.AbstractCookingRecipe;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.book.RecipeBookCategory;
-import net.minecraft.recipe.input.SingleStackRecipeInput;
+import net.minecraft.recipe.book.RecipeBookType;
+import net.minecraft.recipe.RecipePropertySet;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.screen.AbstractFurnaceScreenHandler;
 import net.minecraft.screen.PropertyDelegate;
+import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.screen.slot.Slot;
 import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
 
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
@@ -22,19 +26,23 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 	private final Inventory inventory;
 	private static final Logger LOGGER = Logger.getLogger(UltimateFurnaceScreenHandler.class.getName());
 
-	public UltimateFurnaceScreenHandler(int syncId, PlayerInventory playerInventory) {
-		this(syncId, playerInventory, new SimpleInventory(3), new CustomPropertyDelegate(6, ITEMS_PER_LEVEL));
-	}
-
-	public UltimateFurnaceScreenHandler(int syncId, PlayerInventory playerInventory, Inventory inventory, PropertyDelegate propertyDelegate) {
-		super(ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER, RecipeType.SMELTING, RecipeBookCategory.FURNACE, syncId, playerInventory, inventory, propertyDelegate);
-		this.customPropertyDelegate = propertyDelegate;
+	public UltimateFurnaceScreenHandler(ScreenHandlerType<?> type, RecipeType<? extends AbstractCookingRecipe> recipeType, RegistryKey<RecipePropertySet> recipePropertySetKey, RecipeBookType category, int syncId, PlayerInventory playerInventory, Inventory inventory, PropertyDelegate propertyDelegate) {
+		super(type, recipeType, recipePropertySetKey, category, syncId, playerInventory, inventory, propertyDelegate);
 		this.inventory = inventory;
+		this.customPropertyDelegate = propertyDelegate;
 
-		this.addProperties(customPropertyDelegate); // Add custom property delegate
+		if (inventory == null) {
+			LOGGER.log(Level.SEVERE, "Inventory is null");
+		}
+		if (propertyDelegate == null) {
+			LOGGER.log(Level.SEVERE, "PropertyDelegate is null");
+		}
 
+		this.addProperties(customPropertyDelegate);
 		this.slots.set(1, new UltimateFurnaceFuelSlot(this.inventory, 1, 56, 53));
 	}
+
+
 
 	public int getMaxSmeltCountForLevel() {
 		int level = getLevel();
@@ -78,25 +86,23 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		return cookTimeTotal > 0 ? (int) ((cookTime / (float) cookTimeTotal) * progressBarWidth) : 0;
 	}
 
-	@Override
-	protected boolean isSmeltable(ItemStack itemStack) {
-		return this.world.getRecipeManager().getFirstMatch(RecipeType.SMELTING, new SingleStackRecipeInput(itemStack), this.world).isPresent();
-	}
-
 	public float getFuelProgress() {
-		int burnTime = customPropertyDelegate.get(2);
 		int storedPower = customPropertyDelegate.get(3);
 		int maxPower = UltimateFurnaceBlockEntity.getMaxStoredPower(getLevel());
-		return (burnTime > 0 ? burnTime : storedPower) * 100.0f / maxPower;
+		return maxPower > 0 ? storedPower * 100.0f / maxPower : 0;
 	}
 
+	protected boolean isSmeltable(ItemStack itemStack) {
+
+		return true;
+	}
 	public int getItemsPerLevel() {
 		return ITEMS_PER_LEVEL;
 	}
 
 	@Override
 	public boolean canUse(PlayerEntity player) {
-		return true;
+		return this.inventory.canPlayerUse(player);
 	}
 
 	private static class CustomPropertyDelegate implements PropertyDelegate {
@@ -122,7 +128,5 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		public int size() {
 			return data.length;
 		}
-
-
 	}
 }

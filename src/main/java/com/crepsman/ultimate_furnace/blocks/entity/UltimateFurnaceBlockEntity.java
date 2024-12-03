@@ -1,6 +1,7 @@
 package com.crepsman.ultimate_furnace.blocks.entity;
 
 import com.crepsman.ultimate_furnace.registry.ModBlockEntities;
+import com.crepsman.ultimate_furnace.registry.ModScreenHandlers;
 import com.crepsman.ultimate_furnace.screen.UltimateFurnaceScreenHandler;
 import com.crepsman.ultimate_furnace.util.ModProperties;
 import net.minecraft.block.AbstractFurnaceBlock;
@@ -8,16 +9,19 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.entity.player.PlayerInventory;
+import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.recipe.RecipeEntry;
-import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.SmeltingRecipe;
+import net.minecraft.recipe.*;
+import net.minecraft.recipe.book.RecipeBookType;
 import net.minecraft.recipe.input.SingleStackRecipeInput;
+import net.minecraft.registry.DynamicRegistryManager;
+import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
@@ -25,9 +29,10 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
-import net.minecraft.registry.DynamicRegistryManager;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity implements SidedInventory {
@@ -137,6 +142,10 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	}
 
 	public static void tick(World world, BlockPos pos, BlockState state, UltimateFurnaceBlockEntity blockEntity) {
+		if (world == null || pos == null || state == null || blockEntity == null) {
+			return;
+		}
+
 		blockEntity.updateDaytimeBurning(world, pos);
 
 		boolean isBurning = blockEntity.isBurning();
@@ -154,32 +163,9 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		if (hasInput && canSmelt) {
 			Optional<RecipeEntry<SmeltingRecipe>> recipeEntry = blockEntity.getFirstMatch(new SingleStackRecipeInput(inputStack), world);
 			if (recipeEntry.isPresent()) {
-				boolean isDay = world.getTimeOfDay() % 24000 < 12000;
-				boolean hasDirectSkylight = world.getLightLevel(LightType.SKY, pos.up()) > 0;
-
-				if (isDay && hasDirectSkylight) {
-					blockEntity.burnTime = blockEntity.getCookTime(world);
-					blockEntity.cookTimeTotal = blockEntity.burnTime;
-					stateChanged = true;
-				} else if (!isBurning && blockEntity.storedPower > 0) {
-					blockEntity.burnTime = blockEntity.getCookTime(world);
-					blockEntity.cookTimeTotal = blockEntity.burnTime;
-					stateChanged = true;
-				} else if (!isBurning && blockEntity.level == 1 && isDay && hasDirectSkylight) {
-					blockEntity.burnTime = blockEntity.getCookTime(world);
-					blockEntity.cookTimeTotal = blockEntity.burnTime;
-					stateChanged = true;
-				}
-
-				if (blockEntity.isBurning()) {
-					blockEntity.cookTime += blockEntity.level; // Increase cook time based on level
-					if (blockEntity.cookTime >= blockEntity.cookTimeTotal) {
-						blockEntity.cookTime = 0;
-						blockEntity.cookTimeTotal = blockEntity.getCookTime(world);
-						if (blockEntity.smeltItem(world.getRegistryManager(), recipeEntry.get())) {
-							stateChanged = true;
-						}
-					}
+				RecipeEntry<SmeltingRecipe> recipe = recipeEntry.get();
+				if (recipe != null) {
+					blockEntity.smeltItem(world.getRegistryManager(), recipe);
 				} else {
 					blockEntity.cookTime = 0;
 				}
@@ -189,16 +175,14 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		} else {
 			blockEntity.cookTime = 0;
 			if (!hasInput) {
-				blockEntity.burnTime = 0; // Reset burn time only if no input
+				blockEntity.burnTime = 0;
 			}
 		}
 
-		// Consume storedPower when not in day mode
 		if (!world.getBlockState(pos).get(ModProperties.DAY_MODE) && blockEntity.storedPower > 0) {
 			blockEntity.storedPower = Math.max(0, blockEntity.storedPower - 1);
 		}
 
-		// Ensure the furnace does not turn off and on rapidly
 		if (isBurning != blockEntity.isBurning()) {
 			world.setBlockState(pos, state.with(AbstractFurnaceBlock.LIT, blockEntity.isBurning()), Block.NOTIFY_ALL);
 			stateChanged = true;
@@ -212,37 +196,14 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			blockEntity.levelUp();
 		}
 	}
-	@Override
-	public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
-		super.writeNbt(nbt, lookup);
-		nbt.putInt("SmeltCount", this.smeltCount);
-		nbt.putInt("Level", this.level);
-		nbt.putInt("BurnTime", this.burnTime);
-		nbt.putInt("StoredPower", this.storedPower);
-	}
-
-	@Override
-	public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
-		super.readNbt(nbt, lookup);
-		this.smeltCount = nbt.getInt("SmeltCount");
-		this.level = nbt.getInt("Level");
-		this.burnTime = nbt.getInt("BurnTime");
-		this.storedPower = nbt.getInt("StoredPower");
-	}
-
-	@Override
-	public boolean canInsert(int slot, ItemStack stack, Direction side) {
-		if (slot == 0) {
-			boolean canInsert = this.world.getRecipeManager().getFirstMatch(RecipeType.SMELTING, new SingleStackRecipeInput(stack), this.world).isPresent();
-			return canInsert;
-		}
-		return false;
-	}
 
 	private Optional<RecipeEntry<SmeltingRecipe>> getFirstMatch(SingleStackRecipeInput input, World world) {
-		return this.world.getRecipeManager().getFirstMatch(RecipeType.SMELTING, input, world);
+		if (world instanceof ServerWorld serverWorld) {
+			ServerRecipeManager recipeManager = serverWorld.getRecipeManager();
+			return recipeManager.getFirstMatch(RecipeType.SMELTING, input, world);
+		}
+		return Optional.empty();
 	}
-
 	private boolean canAcceptRecipeOutput(DynamicRegistryManager registryManager, RecipeEntry<SmeltingRecipe> recipe, DefaultedList<ItemStack> slots, int count) {
 		if (!slots.get(0).isEmpty() && recipe != null) {
 			ItemStack itemStack = recipe.value().craft(new SingleStackRecipeInput(slots.get(0)), registryManager);
@@ -285,6 +246,24 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		}
 	}
 
+	@Override
+	public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
+		super.writeNbt(nbt, lookup);
+		nbt.putInt("SmeltCount", this.smeltCount);
+		nbt.putInt("Level", this.level);
+		nbt.putInt("BurnTime", this.burnTime);
+		nbt.putInt("StoredPower", this.storedPower);
+	}
+
+	@Override
+	public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
+		super.readNbt(nbt, lookup);
+		this.smeltCount = nbt.getInt("SmeltCount");
+		this.level = nbt.getInt("Level");
+		this.burnTime = nbt.getInt("BurnTime");
+		this.storedPower = nbt.getInt("StoredPower");
+	}
+
 	private int getCookTime(World world) {
 		return switch (this.level) {
 			case 1 -> 400; // 50% slower
@@ -303,14 +282,44 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 
 	@Override
 	protected Text getContainerName() {
-		return Text.literal("Ultimate Furnace");
+		return Text.translatable("container.ultimate_furnace.ultimate_furnace");
 	}
 
 	@Override
 	public ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
-		return new UltimateFurnaceScreenHandler(syncId, playerInventory, this, this.propertyDelegate);
-	}
+		if (world instanceof ServerWorld serverWorld) {
+			RecipeManager recipeManager = serverWorld.getRecipeManager();
+			RegistryKey<RecipePropertySet> key = RecipePropertySet.FURNACE_INPUT;
 
+			if (key == null) {
+				LOGGER.log(Level.SEVERE, "RegistryKey<RecipePropertySet> is null");
+				return null; // Return early to avoid processing with a null key
+			}
+
+			RecipePropertySet propertySet = recipeManager.getPropertySet(key);
+			if (propertySet == null) {
+				LOGGER.log(Level.SEVERE, "PropertySet is null for key: " + key);
+				return null; // Return early to prevent further null reference issues
+			}
+
+			LOGGER.log(Level.INFO, "PropertySet is not null for key: " + key);
+			LOGGER.log(Level.INFO, "PropertySet hashCode: " + propertySet.hashCode());
+
+			return new UltimateFurnaceScreenHandler(
+				ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER,
+				RecipeType.SMELTING,
+				key,
+				RecipeBookType.FURNACE,
+				syncId,
+				playerInventory,
+				this,
+				this.propertyDelegate
+			);
+		} else {
+			LOGGER.log(Level.WARNING, "World is not an instance of ServerWorld");
+			return null; // Return early to avoid further processing
+		}
+	}
 	public void setStoredPower(int storedPower) {
 		this.storedPower = storedPower;
 	}

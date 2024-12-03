@@ -1,22 +1,39 @@
 package com.crepsman.ultimate_furnace.registry;
 
 import com.crepsman.ultimate_furnace.screen.UltimateFurnaceScreenHandler;
+import net.minecraft.recipe.RecipePropertySet;
+import net.minecraft.recipe.RecipeType;
+import net.minecraft.recipe.book.RecipeBookType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
+import net.minecraft.resource.featuretoggle.FeatureSet;
 import net.minecraft.util.Identifier;
 import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.inventory.SimpleInventory;
+import net.minecraft.screen.ArrayPropertyDelegate;
+
 
 public class ModScreenHandlers {
 
-	// Declare the ScreenHandlerType for the Ultimate Furnace
 	public static final ScreenHandlerType<UltimateFurnaceScreenHandler> ULTIMATE_FURNACE_SCREEN_HANDLER;
 
 	static {
-		// Register the ScreenHandlerType using Registry and the correct identifier
 		ULTIMATE_FURNACE_SCREEN_HANDLER = Registry.register(
 			Registries.SCREEN_HANDLER,
-			Identifier.of("ultimate_furnace", "ultimate_furnace"),
-			new ScreenHandlerType<>(UltimateFurnaceScreenHandler::new,null)
+			Identifier.tryParse("ultimate_furnace:ultimate_furnace"),
+			new ScreenHandlerType<>(
+				(syncId, playerInventory) -> new UltimateFurnaceScreenHandler(
+					ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER,
+					RecipeType.SMELTING,
+					RecipePropertySet.FURNACE_INPUT,
+					RecipeBookType.FURNACE,
+					syncId,
+					playerInventory,
+					new SimpleInventory(3),
+					new ArrayPropertyDelegate(6)
+				),
+				FeatureSet.empty()
+			)
 		);
 	}
 }

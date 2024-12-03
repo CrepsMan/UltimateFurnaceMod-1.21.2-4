@@ -1,7 +1,6 @@
 package com.crepsman.ultimate_furnace.blocks;
 
 import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
-import com.crepsman.ultimate_furnace.registry.ModBlockEntities;
 import com.crepsman.ultimate_furnace.util.ModProperties;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.AbstractBlock;

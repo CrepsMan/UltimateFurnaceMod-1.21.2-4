@@ -2,20 +2,16 @@
   "type": "minecraft:crafting_shaped",
   "category": "misc",
   "key": {
-    "#": {
-      "item": "minecraft:redstone"
-    },
-    "C": {
-      "item": "minecraft:copper_block"
-    }
+    "r": "minecraft:redstone",
+    "C": "minecraft:copper_block"
   },
   "pattern": [
-    "###",
+    "rrr",
     "CCC",
-    "###"
+    "rrr"
   ],
   "result": {
-    "count": 6,
-    "id": "ultimate_furnace:hot_plate"
+    "id": "ultimate_furnace:hot_plate",
+    "count": 6
   }
 }

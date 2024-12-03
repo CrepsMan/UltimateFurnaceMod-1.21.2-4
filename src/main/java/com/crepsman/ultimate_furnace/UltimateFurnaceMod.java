@@ -26,11 +26,15 @@ public class UltimateFurnaceMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		LOGGER.info("Initializing Ultimate Furnace!");
+		// Register blocks, block entities, and screen handlers
+		ModBlocks.registerModBlocks();
+		ModBlockEntities.registerModBlockEntities();
+
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 			dispatcher.register(literal("ultimatefurnace")
-				.requires(source -> source.hasPermissionLevel(4)) // Only operators can use this command
 				.then(literal("set")
+					.requires(source -> source.hasPermissionLevel(4)) // Only operators can use this command
 					.then(literal("level")
 						.then(argument("level", IntegerArgumentType.integer(1, 5))
 							.then(argument("position", BlockPosArgumentType.blockPos())
@@ -97,9 +101,9 @@ public class UltimateFurnaceMod implements ModInitializer {
 							})))
 				));
 
-		// Register blocks, block entities, and screen handlers
-		ModBlocks.registerModBlocks();
-		ModBlockEntities.registerModBlockEntities();
+
+
+
 	}
 	public static Identifier id(String path) {
 		return Identifier.tryParse(MOD_ID, path);
