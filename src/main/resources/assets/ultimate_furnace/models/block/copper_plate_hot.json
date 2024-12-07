@@ -1,8 +1,8 @@
 {
   "parent": "minecraft:block/block",
   "textures": {
-    "0": "ultimate_furnace:block/hot_plate_lit",
-    "particle": "ultimate_furnace:block/hot_plate_lit"
+    "0": "ultimate_furnace:block/copper_plate_hot",
+    "particle": "ultimate_furnace:block/copper_plate_hot"
   },
   "elements": [
     {

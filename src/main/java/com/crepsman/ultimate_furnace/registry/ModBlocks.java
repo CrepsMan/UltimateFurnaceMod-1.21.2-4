@@ -1,32 +1,34 @@
 package com.crepsman.ultimate_furnace.registry;
 
 import com.crepsman.ultimate_furnace.UltimateFurnaceMod;
-import com.crepsman.ultimate_furnace.blocks.HotPlateBlock;
+import com.crepsman.ultimate_furnace.blocks.CopperPlateBlock;
 import com.crepsman.ultimate_furnace.blocks.UltimateFurnaceBlock;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
+import net.minecraft.block.MapColor;
+import net.minecraft.block.enums.NoteBlockInstrument;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
 
 import java.util.function.Function;
 
+import static net.minecraft.block.Blocks.createLightLevelFromLitBlockState;
+
 public class ModBlocks {
 	public static Block ULTIMATE_FURNACE;
-	public static Block HOT_PLATE;
+	public static Block COPPER_PLATE;
 
 	public static void registerModBlocks() {
-		ULTIMATE_FURNACE = registerBlockWithItem("ultimate_furnace", UltimateFurnaceBlock::new, AbstractBlock.Settings.copy(Blocks.COPPER_BLOCK)).getLeft();
-		HOT_PLATE = registerBlockWithItem("hot_plate", HotPlateBlock::new, AbstractBlock.Settings.copy(Blocks.IRON_BLOCK)).getLeft();
-
-		System.out.println("ULTIMATE_FURNACE: " + ULTIMATE_FURNACE);
-		System.out.println("HOT_PLATE: " + HOT_PLATE);
+		ULTIMATE_FURNACE = registerBlockWithItem("ultimate_furnace", UltimateFurnaceBlock::new, AbstractBlock.Settings.create().requiresTool().strength(3.5F).luminance(createLightLevelFromLitBlockState(13))).getLeft();
+		COPPER_PLATE = registerBlockWithItem("copper_plate", CopperPlateBlock::new, AbstractBlock.Settings.copy(Blocks.COPPER_BLOCK)).getLeft();
 	}
 
 	public static <T extends Item> T registerItem(String name, Function<Item.Settings, T> factory) {

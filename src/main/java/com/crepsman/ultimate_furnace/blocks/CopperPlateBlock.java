@@ -1,11 +1,13 @@
 package com.crepsman.ultimate_furnace.blocks;
 
+import com.crepsman.ultimate_furnace.util.ModProperties;
 import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.particle.ParticleTypes;
+import net.minecraft.registry.tag.BlockTags;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
@@ -16,7 +18,6 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
-import net.minecraft.world.WorldAccess;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.block.WireOrientation;
 import net.minecraft.world.event.GameEvent;
@@ -25,33 +26,40 @@ import net.minecraft.util.math.random.Random;
 import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
 
-public class HotPlateBlock extends Block implements Waterloggable {
-	public static final BooleanProperty POWERED = BooleanProperty.of("powered");
-	public static final BooleanProperty WATERLOGGED = Properties.WATERLOGGED;
-	private static final VoxelShape BASE_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 10.0, 16.0);
+public class CopperPlateBlock extends Block implements Waterloggable {
+	public static final BooleanProperty HOT;
+	public static final BooleanProperty COLD;
+	public static final BooleanProperty WATERLOGGED;
+	private static final VoxelShape BASE_SHAPE;
 
-	public HotPlateBlock(Settings settings) {
+
+	public CopperPlateBlock(Settings settings) {
 		super(settings);
-		this.setDefaultState(this.stateManager.getDefaultState().with(POWERED, false).with(WATERLOGGED, false));
+		this.setDefaultState(this.stateManager.getDefaultState().with(HOT, false).with(COLD, false).with(WATERLOGGED, false));
 	}
 
 	@Override
 	public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
-		if (state.get(POWERED) && !state.get(WATERLOGGED) && world instanceof ServerWorld serverWorld) {
+		if (state.get(HOT) && world instanceof ServerWorld serverWorld) {
 			entity.setFireTicks(100);
 			entity.damage(serverWorld, serverWorld.getDamageSources().inFire(), 2.0F);
+			entity.addVelocity(0, 0.5, 0);
+		}else if (state.get(COLD)) {
+			entity.setInPowderSnow(true);
 		}
 		super.onSteppedOn(world, pos, state, entity);
 	}
 
 	protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-		boolean isPowered = world.isReceivingRedstonePower(pos);
-		if (state.get(POWERED) != isPowered) {
-			world.setBlockState(pos, state.with(POWERED, isPowered), Block.NOTIFY_LISTENERS);
-			world.emitGameEvent(null, isPowered ? GameEvent.BLOCK_ACTIVATE : GameEvent.BLOCK_DEACTIVATE, pos);
+		boolean isHOT = sourceBlock == Blocks.MAGMA_BLOCK;
+		boolean isCOLD = sourceBlock == Blocks.PACKED_ICE;
+		if (isCOLD&& !isHOT) {
+			state.cycle(COLD);
+		} else if (isHOT && !isCOLD) {
+			state.cycle(HOT);
 		}
 
-		if (isPowered) {
+		if (isHOT) {
 			BlockPos[] adjacentPositions = {
 				pos.north(), pos.south(), pos.east(), pos.west(), pos.down(), pos.up()
 			};
@@ -67,12 +75,12 @@ public class HotPlateBlock extends Block implements Waterloggable {
 
 	@Nullable
 	public BlockState getPlacementState(ItemPlacementContext ctx) {
-		return this.getDefaultState().with(WATERLOGGED, ctx.getWorld().getFluidState(ctx.getBlockPos()).getFluid() == Fluids.WATER).with(POWERED, ctx.getWorld().isReceivingRedstonePower(ctx.getBlockPos()));
+		return this.getDefaultState().with(WATERLOGGED, ctx.getWorld().getFluidState(ctx.getBlockPos()).getFluid() == Fluids.WATER).with(HOT, ctx.getWorld().isReceivingRedstonePower(ctx.getBlockPos()));
 	}
 
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-		if (state.get(POWERED)) {
+		if (state.get(HOT)) {
 			boolean waterEvaporated = false;
 
 			// Check a circular area with a radius of 3 blocks
@@ -122,13 +130,20 @@ public class HotPlateBlock extends Block implements Waterloggable {
 
 	@Override
 	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		if (state.get(POWERED)) {
+		if (state.get(HOT)) {
 			for (int i = 0; i < 2; i++) {
 				double x = pos.getX() + random.nextDouble();
 				double y = pos.getY() + 0.625;
 				double z = pos.getZ() + random.nextDouble();
 				world.addParticle(ParticleTypes.FLAME, x, y, z, 0.0, 0.01, 0.0);
 				world.addParticle(ParticleTypes.SMOKE, x, y, z, 0.0, 0.01, 0.0);
+			}
+		}else if (state.get(COLD)) {
+			for (int i = 0; i < 2; i++) {
+				double x = pos.getX() + random.nextDouble();
+				double y = pos.getY() + 0.625;
+				double z = pos.getZ() + random.nextDouble();
+				world.addParticle(ParticleTypes.SNOWFLAKE, x, y, z, 0.0, 0.01, 0.0);
 			}
 		}
 	}
@@ -142,7 +157,7 @@ public class HotPlateBlock extends Block implements Waterloggable {
 
 	@Override
 	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
-		builder.add(POWERED, WATERLOGGED);
+		builder.add(HOT, WATERLOGGED, COLD);
 	}
 
 	@Override
@@ -154,5 +169,13 @@ public class HotPlateBlock extends Block implements Waterloggable {
 		if (neighborState.getFluidState().getFluid() == Fluids.WATER || neighborState.getFluidState().getFluid() == Fluids.FLOWING_WATER || (neighborState.contains(Properties.WATERLOGGED) && neighborState.get(WATERLOGGED)))  {
 			tickView.scheduleBlockTick(pos, this, 2);
 		}
-		return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);	}
+		return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
 	}
+
+	static {
+		HOT = ModProperties.HOT;
+		COLD = ModProperties.COLD;
+		WATERLOGGED = Properties.WATERLOGGED;
+		BASE_SHAPE = Block.createCuboidShape(0.0, 0.0, 0.0, 16.0, 10.0, 16.0);
+	}
+}

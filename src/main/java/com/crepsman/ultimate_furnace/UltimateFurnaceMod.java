@@ -3,12 +3,14 @@ package com.crepsman.ultimate_furnace;
 import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
 import com.crepsman.ultimate_furnace.registry.ModBlockEntities;
 import com.crepsman.ultimate_furnace.registry.ModBlocks;
-import com.crepsman.ultimate_furnace.registry.ModScreenHandlers;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.itemgroup.v1.FabricItemGroupEntries;
+import net.fabricmc.fabric.api.itemgroup.v1.ItemGroupEvents;
 import net.minecraft.block.Block;
 import net.minecraft.command.argument.BlockPosArgumentType;
+import net.minecraft.item.ItemGroups;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
@@ -29,6 +31,7 @@ public class UltimateFurnaceMod implements ModInitializer {
 		// Register blocks, block entities, and screen handlers
 		ModBlocks.registerModBlocks();
 		ModBlockEntities.registerModBlockEntities();
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(UltimateFurnaceMod::addItemsToFunctionalItemGroup);
 
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
@@ -103,8 +106,13 @@ public class UltimateFurnaceMod implements ModInitializer {
 
 
 
-
 	}
+
+	private static void addItemsToFunctionalItemGroup(FabricItemGroupEntries entries) {
+		entries.add(ModBlocks.ULTIMATE_FURNACE);
+		entries.add(ModBlocks.COPPER_PLATE);
+	}
+
 	public static Identifier id(String path) {
 		return Identifier.tryParse(MOD_ID, path);
 	}

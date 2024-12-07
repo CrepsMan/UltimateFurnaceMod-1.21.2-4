@@ -1,7 +1,8 @@
 {
   "item.ultimate_furnace.ultimate_furnace": "Ultimate Furnace",
+  "item.ultimate_furnace.copper_plate": "Copper Plate",
   "block.ultimate_furnace.ultimate_furnace": "Ultimate Furnace",
-  "block.ultimate_furnace.hot_plate": "Hot Plate",
+  "block.ultimate_furnace.copper_plate": "Copper Plate",
   "container.ultimate_furnace.ultimate_furnace": "Ultimate Furnace",
   "commands.ultimate_furnace.ultimate_furnace.set.level": "The Furnace's Level Has Been Set To %s",
   "commands.ultimate_furnace.ultimate_furnace.set.power": "The Furnace's Stored Power Has Been Set To %s",
