@@ -9,7 +9,6 @@ import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
 import net.minecraft.entity.player.PlayerInventory;
-import net.minecraft.inventory.Inventory;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
@@ -26,17 +25,14 @@ import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
-import net.minecraft.util.math.MathHelper;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 
-import java.util.List;
 import java.util.Optional;
 import java.util.logging.Level;
-import java.util.logging.Logger;
+
 
 public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity implements SidedInventory {
-	private static final Logger LOGGER = Logger.getLogger(UltimateFurnaceBlockEntity.class.getName());
 	private static final int MAX_LEVEL = 5;
 	private static final int ITEMS_PER_LEVEL = 3000;
 
@@ -97,7 +93,6 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		if (level < MAX_LEVEL) {
 			level++;
 			smeltCount = 0;
-			LOGGER.info("Furnace leveled up to level " + level);
 		}
 	}
 
@@ -141,6 +136,27 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		}
 	}
 
+	private void smeltItem(DynamicRegistryManager registryManager, RecipeEntry<SmeltingRecipe> recipe) {
+		if (recipe != null && canAcceptRecipeOutput(registryManager, recipe, this.inventory, this.getMaxCountPerStack())) {
+			ItemStack inputStack = this.inventory.get(0);
+			ItemStack outputStack = recipe.value().craft(new SingleStackRecipeInput(inputStack), registryManager);
+			ItemStack currentOutputStack = this.inventory.get(2);
+
+			if (currentOutputStack.isEmpty()) {
+				this.inventory.set(2, outputStack.copy());
+			} else if (ItemStack.areItemsEqual(currentOutputStack, outputStack)) {
+				currentOutputStack.increment(outputStack.getCount());
+			}
+
+			inputStack.decrement(1);
+			smeltCount++;
+			this.cookTime = 0; // Reset cook time
+			this.cookTimeTotal = getCookTime(this.world); // Set cook time based on level
+		} else {
+			cookTime = 0;
+		}
+	}
+
 	public static void tick(World world, BlockPos pos, BlockState state, UltimateFurnaceBlockEntity blockEntity) {
 		if (world == null || pos == null || state == null || blockEntity == null) {
 			return;
@@ -165,7 +181,11 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			if (recipeEntry.isPresent()) {
 				RecipeEntry<SmeltingRecipe> recipe = recipeEntry.get();
 				if (recipe != null) {
-					blockEntity.smeltItem(world.getRegistryManager(), recipe);
+					if (blockEntity.cookTime < blockEntity.cookTimeTotal) {
+						blockEntity.cookTime++;
+					} else {
+						blockEntity.smeltItem(world.getRegistryManager(), recipe);
+					}
 				} else {
 					blockEntity.cookTime = 0;
 				}
@@ -226,26 +246,6 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		}
 	}
 
-	private boolean smeltItem(DynamicRegistryManager registryManager, RecipeEntry<SmeltingRecipe> recipe) {
-		if (recipe != null && canAcceptRecipeOutput(registryManager, recipe, this.inventory, this.getMaxCountPerStack())) {
-			ItemStack inputStack = this.inventory.get(0);
-			ItemStack outputStack = recipe.value().craft(new SingleStackRecipeInput(inputStack), registryManager);
-			ItemStack currentOutputStack = this.inventory.get(2);
-
-			if (currentOutputStack.isEmpty()) {
-				this.inventory.set(2, outputStack.copy());
-			} else if (ItemStack.areItemsEqual(currentOutputStack, outputStack)) {
-				currentOutputStack.increment(outputStack.getCount());
-			}
-
-			inputStack.decrement(1);
-			smeltCount++;
-			return true;
-		} else {
-			return false;
-		}
-	}
-
 	@Override
 	public void writeNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
 		super.writeNbt(nbt, lookup);
@@ -292,18 +292,13 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			RegistryKey<RecipePropertySet> key = RecipePropertySet.FURNACE_INPUT;
 
 			if (key == null) {
-				LOGGER.log(Level.SEVERE, "RegistryKey<RecipePropertySet> is null");
 				return null; // Return early to avoid processing with a null key
 			}
 
 			RecipePropertySet propertySet = recipeManager.getPropertySet(key);
 			if (propertySet == null) {
-				LOGGER.log(Level.SEVERE, "PropertySet is null for key: " + key);
 				return null; // Return early to prevent further null reference issues
 			}
-
-			LOGGER.log(Level.INFO, "PropertySet is not null for key: " + key);
-			LOGGER.log(Level.INFO, "PropertySet hashCode: " + propertySet.hashCode());
 
 			return new UltimateFurnaceScreenHandler(
 				ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER,
@@ -316,16 +311,11 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 				this.propertyDelegate
 			);
 		} else {
-			LOGGER.log(Level.WARNING, "World is not an instance of ServerWorld");
 			return null; // Return early to avoid further processing
 		}
 	}
 	public void setStoredPower(int storedPower) {
 		this.storedPower = storedPower;
-	}
-
-	public int getFuelProgress() {
-		return burnTime > 0 ? 100 : 0;
 	}
 
 	public int getStoredPower() {

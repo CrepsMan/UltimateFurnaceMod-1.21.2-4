@@ -1,10 +1,8 @@
 package com.crepsman.ultimate_furnace.screen;
 
-import com.crepsman.ultimate_furnace.registry.ModScreenHandlers;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
-import net.minecraft.inventory.SimpleInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.AbstractCookingRecipe;
 import net.minecraft.recipe.RecipeType;
@@ -14,10 +12,8 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.screen.AbstractFurnaceScreenHandler;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandlerType;
-import net.minecraft.screen.slot.Slot;
 import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
 
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
@@ -30,13 +26,6 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		super(type, recipeType, recipePropertySetKey, category, syncId, playerInventory, inventory, propertyDelegate);
 		this.inventory = inventory;
 		this.customPropertyDelegate = propertyDelegate;
-
-		if (inventory == null) {
-			LOGGER.log(Level.SEVERE, "Inventory is null");
-		}
-		if (propertyDelegate == null) {
-			LOGGER.log(Level.SEVERE, "PropertyDelegate is null");
-		}
 
 		this.addProperties(customPropertyDelegate);
 		this.slots.set(1, new UltimateFurnaceFuelSlot(this.inventory, 1, 56, 53));
@@ -61,10 +50,6 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		return customPropertyDelegate.get(2); // Assuming index 2 is for burnTime
 	}
 
-	public int getStoredPower() {
-		return customPropertyDelegate.get(3); // Assuming index 3 is for storedPower
-	}
-
 	@Override
 	protected boolean isFuel(ItemStack itemStack) {
 		// Return false as this furnace does not use fuel
@@ -78,18 +63,19 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		return maxSmeltCount > 0 ? smeltCount * 100 / maxSmeltCount : 0;
 	}
 
-	public int getSmeltingProgress() {
-		int progressBarWidth = 24; // Width of the progress arrow
-		int cookTime = customPropertyDelegate.get(4);       // Fetch cookTime
-		int cookTimeTotal = customPropertyDelegate.get(5);  // Fetch cookTimeTotal
 
-		return cookTimeTotal > 0 ? (int) ((cookTime / (float) cookTimeTotal) * progressBarWidth) : 0;
-	}
 
-	public float getFuelProgress() {
+	public int getStoredPower() {
 		int storedPower = customPropertyDelegate.get(3);
 		int maxPower = UltimateFurnaceBlockEntity.getMaxStoredPower(getLevel());
-		return maxPower > 0 ? storedPower * 100.0f / maxPower : 0;
+		return maxPower > 0 ? (int) (storedPower * 100.0f / maxPower) : 0;
+	}
+
+
+	public int getCookingProgress() {
+		int cookTime = customPropertyDelegate.get(4);
+		int cookTimeTotal = customPropertyDelegate.get(5);
+		return cookTimeTotal != 0 ? (cookTime * 100) / cookTimeTotal : 0;
 	}
 
 	protected boolean isSmeltable(ItemStack itemStack) {
