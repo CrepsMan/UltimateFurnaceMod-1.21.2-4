@@ -11,7 +11,7 @@
     "F": "minecraft:furnace",
     "C": "minecraft:copper_block",
     "I": "minecraft:iron_block",
-    "H": "ultimate_furnace:hot_plate"
+    "H": "ultimate_furnace:copper_plate"
   },
   "result": {
     "id": "ultimate_furnace:ultimate_furnace",

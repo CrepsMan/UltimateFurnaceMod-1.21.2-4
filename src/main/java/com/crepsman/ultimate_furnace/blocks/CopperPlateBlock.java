@@ -1,5 +1,6 @@
 package com.crepsman.ultimate_furnace.blocks;
 
+import com.crepsman.ultimate_furnace.UltimateFurnaceMod;
 import com.crepsman.ultimate_furnace.util.ModProperties;
 import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
@@ -7,24 +8,28 @@ import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
 import net.minecraft.particle.ParticleTypes;
-import net.minecraft.registry.tag.BlockTags;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.registry.tag.TagKey;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.state.property.Properties;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.util.shape.VoxelShape;
 import net.minecraft.world.BlockView;
 import net.minecraft.world.World;
 import net.minecraft.world.WorldView;
 import net.minecraft.world.block.WireOrientation;
-import net.minecraft.world.event.GameEvent;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.random.Random;
 import net.minecraft.world.tick.ScheduledTickView;
 import org.jetbrains.annotations.Nullable;
+import net.minecraft.block.Block;
+
 
 public class CopperPlateBlock extends Block implements Waterloggable {
 	public static final BooleanProperty HOT;
@@ -32,6 +37,8 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 	public static final BooleanProperty WATERLOGGED;
 	private static final VoxelShape BASE_SHAPE;
 
+	public static final TagKey<Block> WARM_BLOCK_TAG = TagKey.of(RegistryKeys.BLOCK, Identifier.of(UltimateFurnaceMod.MOD_ID, "warm_block"));
+	public static final TagKey<Block> COLD_BLOCK_TAG = TagKey.of(RegistryKeys.BLOCK, Identifier.of(UltimateFurnaceMod.MOD_ID, "cold_block"));
 
 	public CopperPlateBlock(Settings settings) {
 		super(settings);
@@ -42,35 +49,42 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 	public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
 		if (state.get(HOT) && world instanceof ServerWorld serverWorld) {
 			entity.setFireTicks(100);
-			entity.damage(serverWorld, serverWorld.getDamageSources().inFire(), 2.0F);
-			entity.addVelocity(0, 0.5, 0);
+			entity.damage(serverWorld, serverWorld.getDamageSources().inFire(),2.0F);
+			entity.addVelocity(0,0.5,0);
 		}else if (state.get(COLD)) {
 			entity.setInPowderSnow(true);
+			entity.slowMovement(state, new Vec3d((double)0.9F, (double)1.5F, (double)0.9F));
 		}
 		super.onSteppedOn(world, pos, state, entity);
 	}
 
 	protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
-		boolean isHOT = sourceBlock == Blocks.MAGMA_BLOCK;
-		boolean isCOLD = sourceBlock == Blocks.PACKED_ICE;
-		if (isCOLD&& !isHOT) {
-			state.cycle(COLD);
-		} else if (isHOT && !isCOLD) {
-			state.cycle(HOT);
-		}
+		super.neighborUpdate(state, world, pos, sourceBlock, wireOrientation, notify);
+		updateState(world, pos, state);
 
-		if (isHOT) {
-			BlockPos[] adjacentPositions = {
-				pos.north(), pos.south(), pos.east(), pos.west(), pos.down(), pos.up()
-			};
+		BlockPos[] adjacentPositions = {
+			pos.north(), pos.south(), pos.east(), pos.west(), pos.down(), pos.up()
+		};
 
-			for (BlockPos adjacentPos : adjacentPositions) {
-				if (world.getBlockState(adjacentPos).getFluidState().isStill()) {
-					world.scheduleBlockTick(pos, this, 20);
-					break;
-				}
+		for (BlockPos adjacentPos : adjacentPositions) {
+			if (world.getBlockState(adjacentPos).getFluidState().isStill()) {
+				world.scheduleBlockTick(pos, this, 5);
+				break;
 			}
 		}
+	}
+
+	@Override
+	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
+		super.onBlockAdded(state, world, pos, oldState, notify);
+		updateState(world, pos, state);
+	}
+
+	private void updateState(World world, BlockPos pos, BlockState state) {
+		BlockState blockBelow = world.getBlockState(pos.down());
+		boolean isWarmBlock = blockBelow.isIn(WARM_BLOCK_TAG);
+		boolean isColdBlock = blockBelow.isIn(COLD_BLOCK_TAG);
+		world.setBlockState(pos, state.with(HOT, isWarmBlock).with(COLD, isColdBlock), 3);
 	}
 
 	@Nullable
@@ -147,7 +161,6 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 			}
 		}
 	}
-
 
 
 	@Override

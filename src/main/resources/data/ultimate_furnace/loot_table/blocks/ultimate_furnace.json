@@ -2,25 +2,24 @@
   "type": "minecraft:block",
   "pools": [
     {
-      "bonus_rolls": 0.0,
-      "conditions": [
-        {
-          "condition": "minecraft:survives_explosion"
-        }
-      ],
+      "rolls": 1.0,
       "entries": [
         {
           "type": "minecraft:item",
+          "name": "ultimate_furnace:ultimate_furnace",
           "functions": [
             {
               "function": "minecraft:copy_name",
               "source": "block_entity"
             }
-          ],
-          "name": "ultimate_furnace:ultimate_furnace"
+          ]
         }
       ],
-      "rolls": 1.0
+      "conditions": [
+        {
+          "condition": "minecraft:survives_explosion"
+        }
+      ]
     }
   ]
 }
