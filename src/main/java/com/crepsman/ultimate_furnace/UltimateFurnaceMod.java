@@ -31,8 +31,6 @@ public class UltimateFurnaceMod implements ModInitializer {
 		// Register blocks, block entities, and screen handlers
 		ModBlocks.registerModBlocks();
 		ModBlockEntities.registerModBlockEntities();
-		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(UltimateFurnaceMod::addItemsToFunctionalItemGroup);
-
 
 		CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) ->
 			dispatcher.register(literal("ultimatefurnace")
@@ -106,11 +104,6 @@ public class UltimateFurnaceMod implements ModInitializer {
 
 
 
-	}
-
-	private static void addItemsToFunctionalItemGroup(FabricItemGroupEntries entries) {
-		entries.add(ModBlocks.ULTIMATE_FURNACE);
-		entries.add(ModBlocks.COPPER_PLATE);
 	}
 
 	public static Identifier id(String path) {

@@ -1,5 +1,6 @@
 package com.crepsman.ultimate_furnace.blocks.entity;
 
+import com.crepsman.ultimate_furnace.blocks.UltimateFurnaceBlock;
 import com.crepsman.ultimate_furnace.registry.ModBlockEntities;
 import com.crepsman.ultimate_furnace.registry.ModScreenHandlers;
 import com.crepsman.ultimate_furnace.screen.UltimateFurnaceScreenHandler;
@@ -78,6 +79,15 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 				return 6;
 			}
 		};
+
+		if (this.world != null) {
+			boolean isDay = this.world.getTimeOfDay() % 24000 < 12000;
+			boolean hasDirectSkylight = this.world.getLightLevel(LightType.SKY, pos.up()) > 0;
+
+			if (!state.get(ModProperties.DAY_MODE)) {
+				this.world.setBlockState(pos, state.with(ModProperties.DAY_MODE, isDay && hasDirectSkylight), Block.NOTIFY_ALL);
+			}
+		}
 	}
 
 	@Override
@@ -109,30 +119,30 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	}
 
 	public boolean isBurning() {
-		return this.burnTime > 0;
+		return this.cookTime > 0 || this.storedPower > 0;
 	}
 
 	private void updateDaytimeBurning(World world, BlockPos pos) {
-		boolean hasDirectSkylight = world.getLightLevel(LightType.SKY, pos.up()) > 0;
+		if (world == null) return;
+
 		boolean isDay = world.getTimeOfDay() % 24000 < 12000;
+		boolean hasDirectSkylight = world.getLightLevel(LightType.SKY, pos.up()) > 0;
+		boolean newDayMode = isDay && hasDirectSkylight;
 
-		int maxStoredPower = getMaxStoredPower(this.level);
-
-		float powerGainRate = switch (this.level) {
-			case 2 -> 1.0f;
-			case 3 -> 2.0f;
-			case 4 -> 4.0f;
-			case 5 -> 5.0f;
-			default -> 0.0f;
-		};
-
-		if (isDay && hasDirectSkylight && this.level > 1 && this.storedPower < maxStoredPower) {
-			this.storedPower = (int) Math.min((float) this.storedPower + powerGainRate, maxStoredPower);
+		if (newDayMode && this.level > 1 && this.storedPower < getMaxStoredPower(this.level)) {
+			float powerGainRate = switch (this.level) {
+				case 2 -> 1.0f;
+				case 3 -> 2.0f;
+				case 4 -> 4.0f;
+				case 5 -> 5.0f;
+				default -> 0.0f;
+			};
+			this.storedPower = (int) Math.min(this.storedPower + powerGainRate, getMaxStoredPower(this.level));
 		}
-		// Update block state for visual feedback only if it has changed
-		boolean currentDayMode = world.getBlockState(pos).get(ModProperties.DAY_MODE);
-		if (currentDayMode != (isDay && hasDirectSkylight)) {
-			world.setBlockState(pos, world.getBlockState(pos).with(ModProperties.DAY_MODE, isDay && hasDirectSkylight), Block.NOTIFY_ALL);
+
+		BlockState currentState = world.getBlockState(pos);
+		if (currentState.get(UltimateFurnaceBlock.DAY_MODE) != newDayMode) {
+			world.setBlockState(pos, currentState.with(UltimateFurnaceBlock.DAY_MODE, newDayMode), Block.NOTIFY_ALL);
 		}
 	}
 
@@ -152,6 +162,11 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			smeltCount++;
 			this.cookTime = 0; // Reset cook time
 			this.cookTimeTotal = getCookTime(this.world); // Set cook time based on level
+
+			// Decrement stored power
+			if (this.storedPower > 0) {
+				this.storedPower--;
+			}
 		} else {
 			cookTime = 0;
 		}
@@ -185,6 +200,9 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 						blockEntity.cookTime++;
 					} else {
 						blockEntity.smeltItem(world.getRegistryManager(), recipe);
+						if (blockEntity.level == 1) {
+							blockEntity.burnTime = 200; // Set burn time for level 1
+						}
 					}
 				} else {
 					blockEntity.cookTime = 0;
@@ -199,12 +217,13 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			}
 		}
 
-		if (!world.getBlockState(pos).get(ModProperties.DAY_MODE) && blockEntity.storedPower > 0) {
-			blockEntity.storedPower = Math.max(0, blockEntity.storedPower - 1);
-		}
+		boolean dayMode = state.get(ModProperties.DAY_MODE); // Get current day mode
+		boolean newDayMode = world.getTimeOfDay() % 24000 < 12000 && world.getLightLevel(LightType.SKY, pos.up()) > 0; // Recalculate day mode
 
-		if (isBurning != blockEntity.isBurning()) {
-			world.setBlockState(pos, state.with(AbstractFurnaceBlock.LIT, blockEntity.isBurning()), Block.NOTIFY_ALL);
+		if (isBurning != blockEntity.isBurning() || dayMode != newDayMode) {
+			world.setBlockState(pos, state
+				.with(AbstractFurnaceBlock.LIT, blockEntity.isBurning())
+				.with(ModProperties.DAY_MODE, newDayMode), Block.NOTIFY_ALL);
 			stateChanged = true;
 		}
 
@@ -215,15 +234,21 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		if (blockEntity.smeltCount >= ITEMS_PER_LEVEL * blockEntity.getFurnaceLevel()) {
 			blockEntity.levelUp();
 		}
+
+		if (!dayMode) {
+			blockEntity.storedPower--;
+		}
 	}
 
 	private Optional<RecipeEntry<SmeltingRecipe>> getFirstMatch(SingleStackRecipeInput input, World world) {
 		if (world instanceof ServerWorld serverWorld) {
 			ServerRecipeManager recipeManager = serverWorld.getRecipeManager();
+			if (recipeManager == null || input == null) return Optional.empty();
 			return recipeManager.getFirstMatch(RecipeType.SMELTING, input, world);
 		}
 		return Optional.empty();
 	}
+
 	private boolean canAcceptRecipeOutput(DynamicRegistryManager registryManager, RecipeEntry<SmeltingRecipe> recipe, DefaultedList<ItemStack> slots, int count) {
 		if (!slots.get(0).isEmpty() && recipe != null) {
 			ItemStack itemStack = recipe.value().craft(new SingleStackRecipeInput(slots.get(0)), registryManager);
@@ -321,6 +346,8 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	public int getStoredPower() {
 		return storedPower;
 	}
+
+
 
 	public static int getMaxStoredPower(int level) {
 		return switch (level) {

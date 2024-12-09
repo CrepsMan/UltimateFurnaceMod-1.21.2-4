@@ -45,8 +45,9 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 		this.setDefaultState(this.stateManager.getDefaultState().with(HOT, false).with(COLD, false).with(WATERLOGGED, false));
 	}
 
+
 	@Override
-	public void onSteppedOn(World world, BlockPos pos, BlockState state, Entity entity) {
+	protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
 		if (state.get(HOT) && world instanceof ServerWorld serverWorld) {
 			entity.setFireTicks(100);
 			entity.damage(serverWorld, serverWorld.getDamageSources().inFire(),2.0F);
@@ -55,7 +56,7 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 			entity.setInPowderSnow(true);
 			entity.slowMovement(state, new Vec3d((double)0.9F, (double)1.5F, (double)0.9F));
 		}
-		super.onSteppedOn(world, pos, state, entity);
+		super.onEntityCollision(state, world, pos, entity);
 	}
 
 	protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
@@ -96,17 +97,31 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
 		if (state.get(HOT)) {
 			boolean waterEvaporated = false;
+			int radius = 3;
 
-			// Check a circular area with a radius of 3 blocks
-			for (int dx = -3; dx <= 3; dx++) {
-				for (int dy = -3; dy <= 3; dy++) {
-					for (int dz = -3; dz <= 3; dz++) {
-						if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) <= 3) {
+			// Check a 3x3 circular area around the block (excluding the block above)
+			for (int dx = -radius; dx <= radius; dx++) {
+				for (int dy = -radius; dy <= radius; dy++) {
+					for (int dz = -radius; dz <= radius; dz++) {
+						if (Math.abs(dx) + Math.abs(dy) + Math.abs(dz) <= radius) {
 							BlockPos adjacentPos = pos.add(dx, dy, dz);
 							BlockState adjacentState = world.getBlockState(adjacentPos);
 							FluidState fluidState = adjacentState.getFluidState();
-							if (!fluidState.isEmpty()) {
+							if ((fluidState.getFluid() == Fluids.WATER || fluidState.getFluid() == Fluids.FLOWING_WATER) && (!adjacentState.contains(Properties.WATERLOGGED) || !adjacentState.get(Properties.WATERLOGGED))) {
 								world.setBlockState(adjacentPos, Blocks.AIR.getDefaultState(), 3);
+								world.playSound(null, adjacentPos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
+								waterEvaporated = true;
+
+								// Spawn particles where the water disappears
+								for (int i = 0; i < 10; i++) {
+									double x = adjacentPos.getX() + random.nextDouble();
+									double y = adjacentPos.getY() + 0.5;
+									double z = adjacentPos.getZ() + random.nextDouble();
+									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
+									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
+								}
+							} else if (adjacentState.contains(Properties.WATERLOGGED) && adjacentState.get(Properties.WATERLOGGED)) {
+								world.setBlockState(adjacentPos, adjacentState.with(Properties.WATERLOGGED, false), 3);
 								world.playSound(null, adjacentPos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
 								waterEvaporated = true;
 
@@ -137,6 +152,27 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 					world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
 					world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
 					world.spawnParticles(ParticleTypes.DRIPPING_WATER, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
+				}
+			}
+		} else if (state.get(COLD)) {
+			// Check a 1-block area around the block (excluding the block above)
+			for (Direction direction : Direction.values()) {
+				if (direction != Direction.UP) {
+					BlockPos adjacentPos = pos.offset(direction);
+					BlockState adjacentState = world.getBlockState(adjacentPos);
+					FluidState fluidState = adjacentState.getFluidState();
+					if (fluidState.getFluid() == Fluids.WATER && fluidState.isStill()) {
+						world.setBlockState(adjacentPos, Blocks.ICE.getDefaultState(), 3);
+						world.playSound(null, adjacentPos, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
+
+						// Spawn particles where the water turns to ice
+						for (int i = 0; i < 10; i++) {
+							double x = adjacentPos.getX() + random.nextDouble();
+							double y = adjacentPos.getY() + 0.5;
+							double z = adjacentPos.getZ() + random.nextDouble();
+							world.spawnParticles(ParticleTypes.SNOWFLAKE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
+						}
+					}
 				}
 			}
 		}

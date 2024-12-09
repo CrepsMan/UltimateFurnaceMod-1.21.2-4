@@ -1,0 +1,13 @@
+{
+  "asset_id": "ultimate_furnace:crestfall",
+  "author": {
+    "color": "blue",
+    "translate": "painting.ultimate_furnace.crestfall.author"
+  },
+  "height": 4,
+  "title": {
+    "color": "yellow",
+    "translate": "painting.ultimate_furnace.crestfall.title"
+  },
+  "width": 4
+}

@@ -47,10 +47,12 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 		return new UltimateFurnaceBlockEntity(pos, state);
 	}
 
+
 	@Override
 	protected void appendProperties(StateManager.Builder<Block, BlockState> builder) {
 		builder.add(LIT, DAY_MODE, FACING);
 	}
+
 
 	public void onBlockTick(World world, BlockPos pos, BlockState state, UltimateFurnaceBlockEntity furnaceBlockEntity) {
 		UltimateFurnaceBlockEntity.tick(world, pos, state, furnaceBlockEntity);

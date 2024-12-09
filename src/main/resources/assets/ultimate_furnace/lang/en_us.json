@@ -4,9 +4,11 @@
   "block.ultimate_furnace.ultimate_furnace": "Ultimate Furnace",
   "block.ultimate_furnace.copper_plate": "Copper Plate",
   "container.ultimate_furnace.ultimate_furnace": "Ultimate Furnace",
-  "commands.ultimate_furnace.ultimate_furnace.set.level": "The Furnace's Level Has Been Set To %s",
-  "commands.ultimate_furnace.ultimate_furnace.set.power": "The Furnace's Stored Power Has Been Set To %s",
-  "commands.ultimate_furnace.ultimate_furnace.set.count": "The Furnace's Smelt Count Has Been Set To %s",
-  "commands.ultimate_furnace.ultimate_furnace.get": "This Furnace's Smelt Count Is At %s",
-  "commands.ultimate_furnace.ultimate_furnace.fail": "This block is not a Ultimate Furnace"
+  "commands.ultimate_furnace.set.level": "The Furnace's Level Has Been Set To %s",
+  "commands.ultimate_furnace.set.power": "The Furnace's Stored Power Has Been Set To %s",
+  "commands.ultimate_furnace.set.count": "The Furnace's Smelt Count Has Been Set To %s",
+  "commands.ultimate_furnace.fail": "This block is not a Ultimate Furnace",
+
+  "painting.ultimate_furnace.crestfall.title": "Crestfall",
+  "painting.ultimate_furnace.crestfall.author": "Crepsman with AI"
 }
