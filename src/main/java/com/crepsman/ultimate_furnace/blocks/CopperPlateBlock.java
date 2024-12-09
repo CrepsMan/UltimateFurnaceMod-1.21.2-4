@@ -51,7 +51,7 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 		if (state.get(HOT) && world instanceof ServerWorld serverWorld) {
 			entity.setFireTicks(100);
 			entity.damage(serverWorld, serverWorld.getDamageSources().inFire(),2.0F);
-			entity.addVelocity(0,0.5,0);
+			entity.addVelocity(0,0.25,0);
 		}else if (state.get(COLD)) {
 			entity.setInPowderSnow(true);
 			entity.slowMovement(state, new Vec3d((double)0.9F, (double)1.5F, (double)0.9F));
@@ -161,7 +161,7 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 					BlockPos adjacentPos = pos.offset(direction);
 					BlockState adjacentState = world.getBlockState(adjacentPos);
 					FluidState fluidState = adjacentState.getFluidState();
-					if (fluidState.getFluid() == Fluids.WATER && fluidState.isStill()) {
+					if (fluidState.getFluid() == Fluids.WATER && fluidState.isStill() && !adjacentState.contains(Properties.WATERLOGGED)) {
 						world.setBlockState(adjacentPos, Blocks.ICE.getDefaultState(), 3);
 						world.playSound(null, adjacentPos, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
 

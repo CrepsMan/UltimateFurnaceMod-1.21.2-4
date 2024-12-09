@@ -94,7 +94,7 @@ public class UltimateFurnaceMod implements ModInitializer {
 								Block block = context.getSource().getWorld().getBlockState(pos).getBlock();
 								if (block == ModBlocks.ULTIMATE_FURNACE) {
 									UltimateFurnaceBlockEntity entity = context.getSource().getWorld().getBlockEntity(pos, ModBlockEntities.ULTIMATE_FURNACE_BLOCK_ENTITY).get();
-									context.getSource().sendFeedback(() -> Text.literal("Level: " + entity.getFurnaceLevel() + ", Smelt Count: " + entity.getSmeltCount() + ", Stored Power: " + entity.getStoredPower()), true);
+									context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.get", entity.getFurnaceLevel(), entity.getSmeltCount(), entity.getStoredPower()), true);
 								} else {
 									context.getSource().sendFeedback(() -> Text.translatable("commands.ultimate_furnace.fail"), false);
 								}
@@ -102,11 +102,15 @@ public class UltimateFurnaceMod implements ModInitializer {
 							})))
 				));
 
+		ItemGroupEvents.modifyEntriesEvent(ItemGroups.FUNCTIONAL).register(UltimateFurnaceMod::addItemsToFunctionalItemGroup);
+
 
 
 	}
 
-	public static Identifier id(String path) {
-		return Identifier.tryParse(MOD_ID, path);
+
+	private static void addItemsToFunctionalItemGroup(FabricItemGroupEntries entries) {
+		entries.add(ModBlocks.ULTIMATE_FURNACE);
+		entries.add(ModBlocks.COPPER_PLATE);
 	}
 }

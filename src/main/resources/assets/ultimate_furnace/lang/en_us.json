@@ -8,6 +8,7 @@
   "commands.ultimate_furnace.set.power": "The Furnace's Stored Power Has Been Set To %s",
   "commands.ultimate_furnace.set.count": "The Furnace's Smelt Count Has Been Set To %s",
   "commands.ultimate_furnace.fail": "This block is not a Ultimate Furnace",
+  "commands.ultimate_furnace.get": "Level: %s, Smelt Count: %s, Stored Power: %s",
 
   "painting.ultimate_furnace.crestfall.title": "Crestfall",
   "painting.ultimate_furnace.crestfall.author": "Crepsman with AI"
