@@ -122,7 +122,6 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 									double z = adjacentPos.getZ() + random.nextDouble();
 									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
 									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
-									world.spawnParticles(ParticleTypes.DRIPPING_WATER, x, y, z, 3, 0.0, 0.1, 0.0, 0.01);
 
 								}
 							} else if (adjacentState.contains(Properties.WATERLOGGED) && adjacentState.get(Properties.WATERLOGGED)) {
@@ -137,7 +136,6 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 									double z = adjacentPos.getZ() + random.nextDouble();
 									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
 									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
-									world.spawnParticles(ParticleTypes.DRIPPING_WATER, x, y, z, 3, 0.0, 0.1, 0.0, 0.01);
 
 								}
 							} else if (adjacentState.isIn(COLD_BLOCK_TAG)) { // Check if the block is in the tag
@@ -178,7 +176,6 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 					double z = pos.getZ() + random.nextDouble();
 					world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
 					world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
-					world.spawnParticles(ParticleTypes.DRIPPING_WATER, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
 				}
 			}
 		} else if (state.get(COLD)) {
