@@ -79,6 +79,7 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 	public void onBlockAdded(BlockState state, World world, BlockPos pos, BlockState oldState, boolean notify) {
 		super.onBlockAdded(state, world, pos, oldState, notify);
 		updateState(world, pos, state);
+		world.scheduleBlockTick(pos, this, 3);
 	}
 
 	private void updateState(World world, BlockPos pos, BlockState state) {
@@ -95,6 +96,8 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
+		updateState(world, pos, state); // Ensure state is updated before performing actions
+
 		if (state.get(HOT)) {
 			boolean waterEvaporated = false;
 			int radius = 3;
@@ -117,8 +120,10 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 									double x = adjacentPos.getX() + random.nextDouble();
 									double y = adjacentPos.getY() + 0.5;
 									double z = adjacentPos.getZ() + random.nextDouble();
-									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
-									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
+									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
+									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
+									world.spawnParticles(ParticleTypes.DRIPPING_WATER, x, y, z, 3, 0.0, 0.1, 0.0, 0.01);
+
 								}
 							} else if (adjacentState.contains(Properties.WATERLOGGED) && adjacentState.get(Properties.WATERLOGGED)) {
 								world.setBlockState(adjacentPos, adjacentState.with(Properties.WATERLOGGED, false), 3);
@@ -130,10 +135,32 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 									double x = adjacentPos.getX() + random.nextDouble();
 									double y = adjacentPos.getY() + 0.5;
 									double z = adjacentPos.getZ() + random.nextDouble();
-									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
+									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
+									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
+									world.spawnParticles(ParticleTypes.DRIPPING_WATER, x, y, z, 3, 0.0, 0.1, 0.0, 0.01);
+
+								}
+							} else if (adjacentState.isIn(COLD_BLOCK_TAG)) { // Check if the block is in the tag
+								// Remove the block
+								world.setBlockState(adjacentPos, Blocks.AIR.getDefaultState(), 3);
+								// Play the extinguish sound
+								world.playSound(null, adjacentPos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F,
+										2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
+
+								waterEvaporated = true;
+
+								// Spawn particles
+								for (int i = 0; i < 10; i++) {
+									double x = adjacentPos.getX() + random.nextDouble();
+									double y = adjacentPos.getY() + 0.5;
+									double z = adjacentPos.getZ() + random.nextDouble();
+									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 4, 0.0, 0.1, 0.0, 0.01);
 									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
+									world.spawnParticles(ParticleTypes.ITEM_SNOWBALL, x, y, z, 2, 0.1, 0.1, 0.1, 0.01);
+									world.spawnParticles(ParticleTypes.CLOUD, x, y, z, 4, 0.0, 0.1, 0.0, 0.01);
 								}
 							}
+
 						}
 					}
 				}
@@ -149,8 +176,8 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 					double x = pos.getX() + random.nextDouble();
 					double y = pos.getY() + 0.5;
 					double z = pos.getZ() + random.nextDouble();
-					world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
-					world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
+					world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
+					world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
 					world.spawnParticles(ParticleTypes.DRIPPING_WATER, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
 				}
 			}
@@ -215,8 +242,8 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 	}
 
 	protected BlockState getStateForNeighborUpdate(BlockState state, WorldView world, ScheduledTickView tickView, BlockPos pos, Direction direction, BlockPos neighborPos, BlockState neighborState, Random random) {
-		if (neighborState.getFluidState().getFluid() == Fluids.WATER || neighborState.getFluidState().getFluid() == Fluids.FLOWING_WATER || (neighborState.contains(Properties.WATERLOGGED) && neighborState.get(WATERLOGGED)))  {
-			tickView.scheduleBlockTick(pos, this, 2);
+		if (neighborState.getFluidState().getFluid() == Fluids.WATER || neighborState.getFluidState().getFluid() == Fluids.FLOWING_WATER || (neighborState.contains(Properties.WATERLOGGED) && neighborState.get(WATERLOGGED)) || neighborState.isIn(COLD_BLOCK_TAG)) {
+			tickView.scheduleBlockTick(pos, this, 3);
 		}
 		return super.getStateForNeighborUpdate(state, world, tickView, pos, direction, neighborPos, neighborState, random);
 	}
