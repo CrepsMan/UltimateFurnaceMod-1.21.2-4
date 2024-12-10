@@ -2,11 +2,11 @@
   "credit": "Made with Blockbench",
   "parent": "block/orientable",
   "textures": {
-    "0": "ultimate_furnace:block/ultimate_furnace_back",
-    "1": "ultimate_furnace:block/ultimate_furnace_bottom",
-    "2": "ultimate_furnace:block/ultimate_furnace_front_lit",
-    "5": "ultimate_furnace:block/ultimate_furnace_side",
-    "6": "ultimate_furnace:block/ultimate_furnace_inverted_top",
+    "bottom": "ultimate_furnace:block/ultimate_furnace_bottom",
+    "top": "ultimate_furnace:block/ultimate_furnace_inverted_top",
+    "front": "ultimate_furnace:block/ultimate_furnace_front_lit",
+    "side": "ultimate_furnace:block/ultimate_furnace_side",
+    "back": "ultimate_furnace:block/ultimate_furnace_back",
     "particle": "ultimate_furnace:block/ultimate_furnace_side"
   },
   "elements": [
@@ -14,12 +14,12 @@
       "from": [0, 0, 0],
       "to": [16, 16, 16],
       "faces": {
-        "north": {"uv": [0, 0, 16, 16], "texture": "#2"},
-        "east": {"uv": [0, 0, 16, 16], "texture": "#5"},
-        "south": {"uv": [0, 0, 16, 16], "texture": "#0"},
-        "west": {"uv": [0, 0, 16, 16], "texture": "#5"},
-        "up": {"uv": [0, 0, 16, 16], "texture": "#6"},
-        "down": {"uv": [0, 0, 16, 16], "texture": "#1"}
+        "north": {"uv": [0, 0, 16, 16], "texture": "#front"},
+        "east": {"uv": [0, 0, 16, 16], "texture": "#side"},
+        "south": {"uv": [0, 0, 16, 16], "texture": "#back"},
+        "west": {"uv": [0, 0, 16, 16], "texture": "#side"},
+        "up": {"uv": [0, 0, 16, 16], "texture": "#top"},
+        "down": {"uv": [0, 0, 16, 16], "texture": "#bottom"}
       }
     }
   ]
