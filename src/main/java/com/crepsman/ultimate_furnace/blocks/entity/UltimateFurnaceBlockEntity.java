@@ -14,6 +14,7 @@ import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.*;
+import net.minecraft.recipe.book.RecipeBookType;
 import net.minecraft.recipe.input.SingleStackRecipeInput;
 import net.minecraft.registry.DynamicRegistryManager;
 import net.minecraft.registry.RegistryKey;
@@ -118,8 +119,7 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	}
 
 	public boolean isBurning() {
-		ItemStack inputStack = this.getStack(0);
-		return this.cookTime > 0 || this.storedPower > 0 || !inputStack.isEmpty();
+		return this.cookTime > 0 || this.storedPower > 0;
 	}
 
 	private void updateDaytimeBurning(World world, BlockPos pos) {
@@ -196,6 +196,7 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			if (recipeEntry.isPresent()) {
 				RecipeEntry<SmeltingRecipe> recipe = recipeEntry.get();
 				if (recipe != null) {
+					// Set cookTimeTotal when we start cooking or recipe changes
 					if (blockEntity.cookTime == 0) {
 						blockEntity.cookTimeTotal = blockEntity.getCookTime(world);
 					}
@@ -243,13 +244,10 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			blockEntity.storedPower--;
 		}
 	}
-
 	private Optional<RecipeEntry<SmeltingRecipe>> getFirstMatch(SingleStackRecipeInput input, World world) {
 		if (world instanceof ServerWorld serverWorld) {
-			RecipeManager recipeManager = serverWorld.getRecipeManager();
+			ServerRecipeManager recipeManager = serverWorld.getRecipeManager();
 			if (recipeManager == null || input == null) return Optional.empty();
-
-			// Updated method call for 1.21
 			return recipeManager.getFirstMatch(RecipeType.SMELTING, input, world);
 		}
 		return Optional.empty();
@@ -318,16 +316,33 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 
 	@Override
 	public ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
-		return new UltimateFurnaceScreenHandler(
-			ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER,
-			RecipeType.SMELTING,
-			syncId,
-			playerInventory,
-			this,
-			this.propertyDelegate
-		);
-	}
+		if (world instanceof ServerWorld serverWorld) {
+			RecipeManager recipeManager = serverWorld.getRecipeManager();
+			RegistryKey<RecipePropertySet> key = RecipePropertySet.FURNACE_INPUT;
 
+			if (key == null) {
+				return null; // Return early to avoid processing with a null key
+			}
+
+			RecipePropertySet propertySet = recipeManager.getPropertySet(key);
+			if (propertySet == null) {
+				return null; // Return early to prevent further null reference issues
+			}
+
+			return new UltimateFurnaceScreenHandler(
+				ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER,
+				RecipeType.SMELTING,
+				key,
+				RecipeBookType.FURNACE,
+				syncId,
+				playerInventory,
+				this,
+				this.propertyDelegate
+			);
+		} else {
+			return null; // Return early to avoid further processing
+		}
+	}
 	public void setStoredPower(int storedPower) {
 		this.storedPower = storedPower;
 	}
