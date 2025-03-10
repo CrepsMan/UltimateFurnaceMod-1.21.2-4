@@ -1,6 +1,7 @@
 package com.crepsman.ultimate_furnace.blocks;
 
 import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
+import com.crepsman.ultimate_furnace.registry.ModBlockEntities;
 import com.crepsman.ultimate_furnace.util.ModProperties;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.AbstractBlock;
@@ -22,6 +23,7 @@ import net.minecraft.state.property.BooleanProperty;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
+import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 import org.jetbrains.annotations.Nullable;
 
@@ -38,8 +40,8 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 	}
 
 	@Override
-	protected MapCodec<? extends AbstractFurnaceBlock> getCodec() {
-		return null;
+	protected MapCodec<UltimateFurnaceBlock> getCodec() {
+		return createCodec(UltimateFurnaceBlock::new);
 	}
 
 	@Override
@@ -77,11 +79,18 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 	@Nullable
 	@Override
 	public <T extends BlockEntity> BlockEntityTicker<T> getTicker(World world, BlockState state, BlockEntityType<T> type) {
-		return (world1, pos, state1, t) -> {
-			if (t instanceof UltimateFurnaceBlockEntity) {
-				UltimateFurnaceBlockEntity.tick(world1, pos, state1, (UltimateFurnaceBlockEntity) t);
-			}
-		};
+		if (world.isClient) {
+			return null;
+		}
+
+		if (type == ModBlockEntities.ULTIMATE_FURNACE_BLOCK_ENTITY) {
+			return (world1, pos, state1, blockEntity) -> {
+				// This cast is safe because we've verified that T is UltimateFurnaceBlockEntity
+				UltimateFurnaceBlockEntity.tick(world1, pos, state1, (UltimateFurnaceBlockEntity)blockEntity);
+			};
+		}
+
+		return null;
 	}
 
 	public void updateDayMode(World world, BlockState state, BlockPos pos) {
@@ -97,9 +106,11 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
 		boolean isDay = world.getTimeOfDay() % 24000 < 12000;
+		boolean hasDirectSkylight = world.getLightLevel(LightType.SKY, pos.up()) > 0;
+		boolean newDayMode = isDay && hasDirectSkylight;
 
-		if (state.get(DAY_MODE) != isDay) {
-			world.setBlockState(pos, state.with(DAY_MODE, isDay), 3);
+		if (state.get(DAY_MODE) != newDayMode) {
+			world.setBlockState(pos, state.with(DAY_MODE, newDayMode), 3);
 		}
 
 		scheduleNextTick(world, pos);

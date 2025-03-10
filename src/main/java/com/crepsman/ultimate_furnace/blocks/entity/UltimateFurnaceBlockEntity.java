@@ -196,6 +196,11 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			if (recipeEntry.isPresent()) {
 				RecipeEntry<SmeltingRecipe> recipe = recipeEntry.get();
 				if (recipe != null) {
+					// Set cookTimeTotal when we start cooking or recipe changes
+					if (blockEntity.cookTime == 0) {
+						blockEntity.cookTimeTotal = blockEntity.getCookTime(world);
+					}
+
 					if (blockEntity.cookTime < blockEntity.cookTimeTotal) {
 						blockEntity.cookTime++;
 					} else {
@@ -235,11 +240,10 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			blockEntity.levelUp();
 		}
 
-		if (!dayMode) {
+		if (!dayMode && blockEntity.storedPower > 0) {
 			blockEntity.storedPower--;
 		}
 	}
-
 	private Optional<RecipeEntry<SmeltingRecipe>> getFirstMatch(SingleStackRecipeInput input, World world) {
 		if (world instanceof ServerWorld serverWorld) {
 			ServerRecipeManager recipeManager = serverWorld.getRecipeManager();
