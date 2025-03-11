@@ -13,6 +13,8 @@ run/
 
 # IntelliJ Idea
 .idea/
+!.idea/misc.xml
+
 *.iml
 *.ipr
 *.iws
