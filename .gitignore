@@ -12,7 +12,7 @@ run/
 *.launch
 
 # IntelliJ Idea
-.idea/
+.idea/*
 !.idea/misc.xml
 *.iml
 *.ipr
