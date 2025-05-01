@@ -118,7 +118,8 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	}
 
 	public boolean isBurning() {
-		return this.cookTime > 0 || this.storedPower > 0;
+		ItemStack inputStack = this.getStack(0);
+		return this.cookTime > 0 || this.storedPower > 0 || !inputStack.isEmpty();
 	}
 
 	private void updateDaytimeBurning(World world, BlockPos pos) {
@@ -195,6 +196,10 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			if (recipeEntry.isPresent()) {
 				RecipeEntry<SmeltingRecipe> recipe = recipeEntry.get();
 				if (recipe != null) {
+					if (blockEntity.cookTime == 0) {
+						blockEntity.cookTimeTotal = blockEntity.getCookTime(world);
+					}
+
 					if (blockEntity.cookTime < blockEntity.cookTimeTotal) {
 						blockEntity.cookTime++;
 					} else {
@@ -234,7 +239,7 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			blockEntity.levelUp();
 		}
 
-		if (!dayMode) {
+		if (!dayMode && blockEntity.storedPower > 0) {
 			blockEntity.storedPower--;
 		}
 	}

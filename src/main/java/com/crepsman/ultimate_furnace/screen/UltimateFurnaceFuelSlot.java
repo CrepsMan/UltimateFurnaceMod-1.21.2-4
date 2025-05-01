@@ -1,5 +1,6 @@
 package com.crepsman.ultimate_furnace.screen;
 
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.screen.slot.Slot;
@@ -11,12 +12,6 @@ public class UltimateFurnaceFuelSlot extends Slot {
 	}
 
 	@Override
-	public boolean canInsert(ItemStack stack) {
-		// Prevent any item from being inserted as fuel
-		return false;
-	}
-
-	@Override
 	public int getMaxItemCount(ItemStack stack) {
 		return 0;  // No fuel, so max count is zero
 	}
@@ -24,5 +19,19 @@ public class UltimateFurnaceFuelSlot extends Slot {
 	public boolean canBeHighlighted() {
 		// Override this to prevent the highlight from showing on this slot
 		return false;
+	}
+	@Override
+	public boolean canInsert(ItemStack stack) {
+		return false;  // Prevent any item insertion
+	}
+
+	@Override
+	public boolean canTakeItems(PlayerEntity player) {
+		return false;  // Prevent item removal
+	}
+
+	@Override
+	public boolean isEnabled() {
+		return false;  // Make it visibly disabled
 	}
 }

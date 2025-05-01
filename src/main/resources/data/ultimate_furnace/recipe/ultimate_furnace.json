@@ -1,18 +1,30 @@
 {
   "type": "minecraft:crafting_shaped",
+  "key": {
+    "I": {
+      "item": "minecraft:iron_block"
+    },
+    "C": {
+      "item": "minecraft:copper_block"
+    },
+    "H": {
+      "item": "ultimate_furnace:copper_plate"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "D": {
+      "item": "minecraft:daylight_detector"
+    },
+    "F": {
+      "item": "minecraft:furnace"
+    }
+  },
   "pattern": [
     "IDI",
     "RFR",
     "CHC"
   ],
-  "key": {
-    "R": "minecraft:redstone",
-    "D": "minecraft:daylight_detector",
-    "F": "minecraft:furnace",
-    "C": "minecraft:copper_block",
-    "I": "minecraft:iron_block",
-    "H": "ultimate_furnace:copper_plate"
-  },
   "result": {
     "id": "ultimate_furnace:ultimate_furnace",
     "count": 1
