@@ -35,21 +35,17 @@ public class ModBlocks {
 		RegistryKey<Item> key = RegistryKey.of(RegistryKeys.ITEM, Identifier.of(UltimateFurnaceMod.MOD_ID, name));
 		return Registry.register(
 			Registries.ITEM,
-			key,
-			factory.apply(new Item.Settings().registryKey(key))
+			key.getValue(), // Use the Identifier directly instead of registryKey()
+			factory.apply(new Item.Settings())
 		);
-	}
-
-	public static <T extends Block> T registerBlock(String name, Function<AbstractBlock.Settings, T> factory) {
-		return registerBlock(name, factory, AbstractBlock.Settings.create());
 	}
 
 	public static <T extends Block> T registerBlock(String name, Function<AbstractBlock.Settings, T> factory, AbstractBlock.Settings base) {
 		RegistryKey<Block> key = RegistryKey.of(RegistryKeys.BLOCK, Identifier.of(UltimateFurnaceMod.MOD_ID, name));
 		return Registry.register(
 			Registries.BLOCK,
-			key,
-			factory.apply(base.registryKey(key))
+			key.getValue(), // Use the Identifier directly instead of registryKey()
+			factory.apply(base)
 		);
 	}
 

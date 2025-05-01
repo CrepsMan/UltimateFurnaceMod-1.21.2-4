@@ -1,9 +1,7 @@
 package com.crepsman.ultimate_furnace.registry;
 
 import com.crepsman.ultimate_furnace.screen.UltimateFurnaceScreenHandler;
-import net.minecraft.recipe.RecipePropertySet;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.book.RecipeBookType;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.resource.featuretoggle.FeatureSet;
@@ -25,8 +23,6 @@ public class ModScreenHandlers {
 				(syncId, playerInventory) -> new UltimateFurnaceScreenHandler(
 					ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER,
 					RecipeType.SMELTING,
-					RecipePropertySet.FURNACE_INPUT,
-					RecipeBookType.FURNACE,
 					syncId,
 					playerInventory,
 					new SimpleInventory(3),
