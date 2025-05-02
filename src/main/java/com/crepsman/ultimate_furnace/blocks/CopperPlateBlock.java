@@ -3,6 +3,7 @@ package com.crepsman.ultimate_furnace.blocks;
 import com.crepsman.ultimate_furnace.UltimateFurnaceMod;
 import com.crepsman.ultimate_furnace.util.ModProperties;
 import net.minecraft.block.*;
+import net.minecraft.entity.CollisionEvent;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityCollisionHandler;
 import net.minecraft.fluid.FluidState;
@@ -46,7 +47,7 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 		this.setDefaultState(this.stateManager.getDefaultState().with(HOT, false).with(COLD, false).with(WATERLOGGED, false));
 	}
 
-
+	@Override
 	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler handler) {
 		if (state.get(HOT) && world instanceof ServerWorld serverWorld) {
 			entity.setFireTicks(100);
@@ -55,7 +56,11 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 		} else if (state.get(COLD)) {
 			entity.slowMovement(state, new Vec3d((double)0.9F, (double)1.5F, (double)0.9F));
 			entity.setInPowderSnow(true);
+			entity.setFrozenTicks(entity.getMinFreezeDamageTicks() + 1);
+			handler.addEvent(CollisionEvent.FREEZE);
+			handler.addEvent(CollisionEvent.EXTINGUISH);
 		}
+
 		super.onEntityCollision(state, world, pos, entity, handler);
 	}
 
