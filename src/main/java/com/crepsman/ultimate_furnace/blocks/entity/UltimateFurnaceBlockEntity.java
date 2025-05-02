@@ -287,10 +287,10 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	@Override
 	public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
 		super.readNbt(nbt, lookup);
-		this.smeltCount = nbt.getInt("SmeltCount");
-		this.level = nbt.getInt("Level");
-		this.burnTime = nbt.getInt("BurnTime");
-		this.storedPower = nbt.getInt("StoredPower");
+		this.smeltCount = nbt.getInt("SmeltCount", 0);
+		this.level = nbt.getInt("Level", 1);
+		this.burnTime = nbt.getInt("BurnTime", 0);
+		this.storedPower = nbt.getInt("StoredPower", 0);
 	}
 
 	private int getCookTime(World world) {

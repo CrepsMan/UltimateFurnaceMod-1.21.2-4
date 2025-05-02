@@ -4,6 +4,7 @@ import com.crepsman.ultimate_furnace.UltimateFurnaceMod;
 import com.crepsman.ultimate_furnace.util.ModProperties;
 import net.minecraft.block.*;
 import net.minecraft.entity.Entity;
+import net.minecraft.entity.EntityCollisionHandler;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
@@ -46,17 +47,16 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 	}
 
 
-	@Override
-	protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
+	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler handler) {
 		if (state.get(HOT) && world instanceof ServerWorld serverWorld) {
 			entity.setFireTicks(100);
 			entity.damage(serverWorld, serverWorld.getDamageSources().inFire(),2.0F);
 			entity.addVelocity(0,0.25,0);
-		}else if (state.get(COLD)) {
-			entity.setInPowderSnow(true);
+		} else if (state.get(COLD)) {
 			entity.slowMovement(state, new Vec3d((double)0.9F, (double)1.5F, (double)0.9F));
+			entity.setInPowderSnow(true);
 		}
-		super.onEntityCollision(state, world, pos, entity);
+		super.onEntityCollision(state, world, pos, entity, handler);
 	}
 
 	protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
@@ -209,15 +209,15 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 				double x = pos.getX() + random.nextDouble();
 				double y = pos.getY() + 0.625;
 				double z = pos.getZ() + random.nextDouble();
-				world.addParticle(ParticleTypes.FLAME, x, y, z, 0.0, 0.01, 0.0);
-				world.addParticle(ParticleTypes.SMOKE, x, y, z, 0.0, 0.01, 0.0);
+				world.addParticleClient(ParticleTypes.FLAME, x, y, z, 0.0, 0.01, 0.0);
+				world.addParticleClient(ParticleTypes.SMOKE, x, y, z, 0.0, 0.01, 0.0);
 			}
 		}else if (state.get(COLD)) {
 			for (int i = 0; i < 2; i++) {
 				double x = pos.getX() + random.nextDouble();
 				double y = pos.getY() + 0.625;
 				double z = pos.getZ() + random.nextDouble();
-				world.addParticle(ParticleTypes.SNOWFLAKE, x, y, z, 0.0, 0.01, 0.0);
+				world.addParticleClient(ParticleTypes.SNOWFLAKE, x, y, z, 0.0, 0.01, 0.0);
 			}
 		}
 	}
