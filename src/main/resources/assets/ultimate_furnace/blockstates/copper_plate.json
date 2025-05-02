@@ -8,9 +8,6 @@
     },
     "cold=true,hot=false": {
       "model": "ultimate_furnace:block/copper_plate_cold"
-    },
-    "": {
-      "model": "ultimate_furnace:block/copper_plate"
     }
   }
 }
