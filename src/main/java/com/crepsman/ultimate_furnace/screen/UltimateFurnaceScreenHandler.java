@@ -63,8 +63,25 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		return maxSmeltCount > 0 ? smeltCount * 100 / maxSmeltCount : 0;
 	}
 
+	@Override
+	public boolean isBurning() {
+		// Get values from property delegate
+		int burnTime = customPropertyDelegate.get(2);
+		int cookTime = customPropertyDelegate.get(4);
+		int storedPower = customPropertyDelegate.get(3);
+		boolean hasInput = !inventory.getStack(0).isEmpty();
 
+		// Only show fire if:
+		// 1. Actually burning with burnTime, OR
+		// 2. Actively cooking something, OR
+		// 3. Has stored power AND input
 
+		if (burnTime > 0) return true;  // Always show flame if there's active burn time
+		if (cookTime > 0) return true;  // Always show flame if cooking is in progress
+
+		// Otherwise, only show flame if there's stored power AND input
+		return hasInput && storedPower > 0;
+	}
 	public int getStoredPower() {
 		int storedPower = customPropertyDelegate.get(3);
 		int maxPower = UltimateFurnaceBlockEntity.getMaxStoredPower(getLevel());
