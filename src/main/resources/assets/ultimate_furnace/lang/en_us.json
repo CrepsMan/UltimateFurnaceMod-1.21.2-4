@@ -9,6 +9,13 @@
   "commands.ultimate_furnace.set.count": "The Furnace's Smelt Count Has Been Set To %s",
   "commands.ultimate_furnace.fail": "This block is not a Ultimate Furnace",
   "commands.ultimate_furnace.get": "Level: %s, Smelt Count: %s, Stored Power: %s",
+  "commands.ultimate_furnace.reload.success": "Ultimate Furnace config reloaded.",
+  "commands.ultimate_furnace.info": "Level: %s, Smelt Count: %s, Stored Power: %s/%s, Items Per Level: %s, Cook Time (ticks): %s, Power Gain/t: %s",
+  "commands.ultimate_furnace.give.success": "Gave configured Ultimate Furnace to player(s)",
+  "commands.ultimate_furnace.give.fail": "Failed to give Ultimate Furnace",
+  "tooltip.ultimate_furnace.level": "Level: %s",
+  "tooltip.ultimate_furnace.smelted": "Smelted: %s",
+  "tooltip.ultimate_furnace.power": "Stored Power: %s/%s",
 
   "painting.ultimate_furnace.crestfall.title": "Crestfall",
   "painting.ultimate_furnace.crestfall.author": "Crepsman with AI"

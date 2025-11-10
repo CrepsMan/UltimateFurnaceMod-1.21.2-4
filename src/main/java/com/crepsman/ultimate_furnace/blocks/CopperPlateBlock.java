@@ -3,9 +3,7 @@ package com.crepsman.ultimate_furnace.blocks;
 import com.crepsman.ultimate_furnace.UltimateFurnaceMod;
 import com.crepsman.ultimate_furnace.util.ModProperties;
 import net.minecraft.block.*;
-import net.minecraft.entity.CollisionEvent;
 import net.minecraft.entity.Entity;
-import net.minecraft.entity.EntityCollisionHandler;
 import net.minecraft.fluid.FluidState;
 import net.minecraft.fluid.Fluids;
 import net.minecraft.item.ItemPlacementContext;
@@ -47,21 +45,18 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 		this.setDefaultState(this.stateManager.getDefaultState().with(HOT, false).with(COLD, false).with(WATERLOGGED, false));
 	}
 
+
 	@Override
-	public void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, EntityCollisionHandler handler) {
+	protected void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity) {
 		if (state.get(HOT) && world instanceof ServerWorld serverWorld) {
 			entity.setFireTicks(100);
 			entity.damage(serverWorld, serverWorld.getDamageSources().inFire(),2.0F);
 			entity.addVelocity(0,0.25,0);
-		} else if (state.get(COLD)) {
-			entity.slowMovement(state, new Vec3d((double)0.9F, (double)1.5F, (double)0.9F));
+		}else if (state.get(COLD)) {
 			entity.setInPowderSnow(true);
-			entity.setFrozenTicks(entity.getMinFreezeDamageTicks() + 1);
-			handler.addEvent(CollisionEvent.FREEZE);
-			handler.addEvent(CollisionEvent.EXTINGUISH);
+			entity.slowMovement(state, new Vec3d(0.9, 1.5, 0.9));
 		}
-
-		super.onEntityCollision(state, world, pos, entity, handler);
+		super.onEntityCollision(state, world, pos, entity);
 	}
 
 	protected void neighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify) {
@@ -91,6 +86,12 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 		BlockState blockBelow = world.getBlockState(pos.down());
 		boolean isWarmBlock = blockBelow.isIn(WARM_BLOCK_TAG);
 		boolean isColdBlock = blockBelow.isIn(COLD_BLOCK_TAG);
+		// enforce mutual exclusivity: HOT takes priority over COLD if both detected
+		if (isWarmBlock && isColdBlock) {
+			isColdBlock = false;
+		}
+		// avoid unnecessary world updates if state is already correct
+		if (state.get(HOT) == isWarmBlock && state.get(COLD) == isColdBlock) return;
 		world.setBlockState(pos, state.with(HOT, isWarmBlock).with(COLD, isColdBlock), 3);
 	}
 
@@ -101,13 +102,9 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 
 	@Override
 	public void scheduledTick(BlockState state, ServerWorld world, BlockPos pos, Random random) {
-		updateState(world, pos, state); // Ensure state is updated before performing actions
-
+		updateState(world, pos, state);
 		if (state.get(HOT)) {
-			boolean waterEvaporated = false;
 			int radius = 3;
-
-			// Check a 3x3 circular area around the block (excluding the block above)
 			for (int dx = -radius; dx <= radius; dx++) {
 				for (int dy = -radius; dy <= radius; dy++) {
 					for (int dz = -radius; dz <= radius; dz++) {
@@ -118,70 +115,24 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 							if ((fluidState.getFluid() == Fluids.WATER || fluidState.getFluid() == Fluids.FLOWING_WATER) && (!adjacentState.contains(Properties.WATERLOGGED) || !adjacentState.get(Properties.WATERLOGGED))) {
 								world.setBlockState(adjacentPos, Blocks.AIR.getDefaultState(), 3);
 								world.playSound(null, adjacentPos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
-								waterEvaporated = true;
-
-								// Spawn particles where the water disappears
-								for (int i = 0; i < 10; i++) {
-									double x = adjacentPos.getX() + random.nextDouble();
-									double y = adjacentPos.getY() + 0.5;
-									double z = adjacentPos.getZ() + random.nextDouble();
-									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
-									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
-
-								}
+								spawnEvapParticles(world, adjacentPos, random);
 							} else if (adjacentState.contains(Properties.WATERLOGGED) && adjacentState.get(Properties.WATERLOGGED)) {
 								world.setBlockState(adjacentPos, adjacentState.with(Properties.WATERLOGGED, false), 3);
 								world.playSound(null, adjacentPos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
-								waterEvaporated = true;
-
-								// Spawn particles where the water disappears
-								for (int i = 0; i < 10; i++) {
-									double x = adjacentPos.getX() + random.nextDouble();
-									double y = adjacentPos.getY() + 0.5;
-									double z = adjacentPos.getZ() + random.nextDouble();
-									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
-									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
-
-								}
-							} else if (adjacentState.isIn(COLD_BLOCK_TAG)) { // Check if the block is in the tag
-								// Remove the block
+								spawnEvapParticles(world, adjacentPos, random);
+							} else if (adjacentState.isIn(COLD_BLOCK_TAG)) {
 								world.setBlockState(adjacentPos, Blocks.AIR.getDefaultState(), 3);
-								// Play the extinguish sound
-								world.playSound(null, adjacentPos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F,
-										2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
-
-								waterEvaporated = true;
-
-								// Spawn particles
-								for (int i = 0; i < 10; i++) {
-									double x = adjacentPos.getX() + random.nextDouble();
-									double y = adjacentPos.getY() + 0.5;
-									double z = adjacentPos.getZ() + random.nextDouble();
-									world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 4, 0.0, 0.1, 0.0, 0.01);
-									world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
-									world.spawnParticles(ParticleTypes.ITEM_SNOWBALL, x, y, z, 2, 0.1, 0.1, 0.1, 0.01);
-									world.spawnParticles(ParticleTypes.CLOUD, x, y, z, 4, 0.0, 0.1, 0.0, 0.01);
-								}
+								world.playSound(null, adjacentPos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
+								spawnColdRemovalParticles(world, adjacentPos, random);
 							}
-
 						}
 					}
 				}
 			}
-
 			if (state.get(WATERLOGGED)) {
 				world.setBlockState(pos, state.with(WATERLOGGED, false), 3);
 				world.playSound(null, pos, SoundEvents.BLOCK_FIRE_EXTINGUISH, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
-				waterEvaporated = true;
-
-				// Spawn particles where the water disappears
-				for (int i = 0; i < 10; i++) {
-					double x = pos.getX() + random.nextDouble();
-					double y = pos.getY() + 0.5;
-					double z = pos.getZ() + random.nextDouble();
-					world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
-					world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
-				}
+				spawnEvapParticles(world, pos, random);
 			}
 		} else if (state.get(COLD)) {
 			// Check a 1-block area around the block (excluding the block above)
@@ -193,8 +144,6 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 					if (fluidState.getFluid() == Fluids.WATER && fluidState.isStill() && !adjacentState.contains(Properties.WATERLOGGED)) {
 						world.setBlockState(adjacentPos, Blocks.ICE.getDefaultState(), 3);
 						world.playSound(null, adjacentPos, SoundEvents.BLOCK_GLASS_BREAK, SoundCategory.BLOCKS, 0.5F, 2.6F + (random.nextFloat() - random.nextFloat()) * 0.8F);
-
-						// Spawn particles where the water turns to ice
 						for (int i = 0; i < 10; i++) {
 							double x = adjacentPos.getX() + random.nextDouble();
 							double y = adjacentPos.getY() + 0.5;
@@ -207,23 +156,25 @@ public class CopperPlateBlock extends Block implements Waterloggable {
 		}
 	}
 
-	@Override
-	public void randomDisplayTick(BlockState state, World world, BlockPos pos, Random random) {
-		if (state.get(HOT)) {
-			for (int i = 0; i < 2; i++) {
-				double x = pos.getX() + random.nextDouble();
-				double y = pos.getY() + 0.625;
-				double z = pos.getZ() + random.nextDouble();
-				world.addParticleClient(ParticleTypes.FLAME, x, y, z, 0.0, 0.01, 0.0);
-				world.addParticleClient(ParticleTypes.SMOKE, x, y, z, 0.0, 0.01, 0.0);
-			}
-		}else if (state.get(COLD)) {
-			for (int i = 0; i < 2; i++) {
-				double x = pos.getX() + random.nextDouble();
-				double y = pos.getY() + 0.625;
-				double z = pos.getZ() + random.nextDouble();
-				world.addParticleClient(ParticleTypes.SNOWFLAKE, x, y, z, 0.0, 0.01, 0.0);
-			}
+	private void spawnEvapParticles(ServerWorld world, BlockPos pos, Random random) {
+		for (int i = 0; i < 10; i++) {
+			double x = pos.getX() + random.nextDouble();
+			double y = pos.getY() + 0.5;
+			double z = pos.getZ() + random.nextDouble();
+			world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
+			world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 5, 0.0, 0.1, 0.0, 0.01);
+		}
+	}
+
+	private void spawnColdRemovalParticles(ServerWorld world, BlockPos pos, Random random) {
+		for (int i = 0; i < 10; i++) {
+			double x = pos.getX() + random.nextDouble();
+			double y = pos.getY() + 0.5;
+			double z = pos.getZ() + random.nextDouble();
+			world.spawnParticles(ParticleTypes.SMOKE, x, y, z, 4, 0.0, 0.1, 0.0, 0.01);
+			world.spawnParticles(ParticleTypes.BUBBLE, x, y, z, 1, 0.0, 0.1, 0.0, 0.01);
+			world.spawnParticles(ParticleTypes.ITEM_SNOWBALL, x, y, z, 2, 0.1, 0.1, 0.1, 0.01);
+			world.spawnParticles(ParticleTypes.CLOUD, x, y, z, 4, 0.0, 0.1, 0.0, 0.01);
 		}
 	}
 

@@ -13,11 +13,11 @@ import net.minecraft.screen.AbstractFurnaceScreenHandler;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandlerType;
 import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
+import com.crepsman.ultimate_furnace.util.FurnaceConfig;
 
 import java.util.logging.Logger;
 
 public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
-	private static final int ITEMS_PER_LEVEL = 3000; // Define ITEMS_PER_LEVEL
 	private final PropertyDelegate customPropertyDelegate;
 	private final Inventory inventory;
 	private static final Logger LOGGER = Logger.getLogger(UltimateFurnaceScreenHandler.class.getName());
@@ -31,63 +31,33 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		this.slots.set(1, new UltimateFurnaceFuelSlot(this.inventory, 1, 56, 53));
 	}
 
-
-
 	public int getMaxSmeltCountForLevel() {
 		int level = getLevel();
-		return level < 5 ? ITEMS_PER_LEVEL * level : ITEMS_PER_LEVEL * 5;
+		int itemsPerLevel = FurnaceConfig.getItemsPerLevel();
+		int maxLevel = FurnaceConfig.getMaxLevel();
+		return level < maxLevel ? itemsPerLevel * level : itemsPerLevel * maxLevel;
 	}
 
-	public int getLevel() {
-		return customPropertyDelegate.get(1); // Assuming index 1 is for level
-	}
-
-	public int getSmeltCount() {
-		return customPropertyDelegate.get(0); // Assuming index 0 is for smelt count
-	}
-
-	public int getBurnTime() {
-		return customPropertyDelegate.get(2); // Assuming index 2 is for burnTime
-	}
+	public int getLevel() { return customPropertyDelegate.get(1); }
+	public int getSmeltCount() { return customPropertyDelegate.get(0); }
+	public int getBurnTime() { return customPropertyDelegate.get(2); }
 
 	@Override
-	protected boolean isFuel(ItemStack itemStack) {
-		// Return false as this furnace does not use fuel
-		return false;
-	}
+	protected boolean isFuel(ItemStack itemStack) { return false; }
 
 	public int getSmeltCountProgress() {
 		int smeltCount = customPropertyDelegate.get(0);
 		int level = customPropertyDelegate.get(1);
-		int maxSmeltCount = ITEMS_PER_LEVEL * level;
+		int itemsPerLevel = FurnaceConfig.getItemsPerLevel();
+		int maxSmeltCount = itemsPerLevel * level;
 		return maxSmeltCount > 0 ? smeltCount * 100 / maxSmeltCount : 0;
 	}
 
-	@Override
-	public boolean isBurning() {
-		// Get values from property delegate
-		int burnTime = customPropertyDelegate.get(2);
-		int cookTime = customPropertyDelegate.get(4);
-		int storedPower = customPropertyDelegate.get(3);
-		boolean hasInput = !inventory.getStack(0).isEmpty();
-
-		// Only show fire if:
-		// 1. Actually burning with burnTime, OR
-		// 2. Actively cooking something, OR
-		// 3. Has stored power AND input
-
-		if (burnTime > 0) return true;  // Always show flame if there's active burn time
-		if (cookTime > 0) return true;  // Always show flame if cooking is in progress
-
-		// Otherwise, only show flame if there's stored power AND input
-		return hasInput && storedPower > 0;
-	}
 	public int getStoredPower() {
 		int storedPower = customPropertyDelegate.get(3);
 		int maxPower = UltimateFurnaceBlockEntity.getMaxStoredPower(getLevel());
 		return maxPower > 0 ? (int) (storedPower * 100.0f / maxPower) : 0;
 	}
-
 
 	public int getCookingProgress() {
 		int cookTime = customPropertyDelegate.get(4);
@@ -95,41 +65,8 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		return cookTimeTotal != 0 ? (cookTime * 100) / cookTimeTotal : 0;
 	}
 
-	protected boolean isSmeltable(ItemStack itemStack) {
-
-		return true;
-	}
-	public int getItemsPerLevel() {
-		return ITEMS_PER_LEVEL;
-	}
+	protected boolean isSmeltable(ItemStack itemStack) { return true; }
 
 	@Override
-	public boolean canUse(PlayerEntity player) {
-		return this.inventory.canPlayerUse(player);
-	}
-
-	private static class CustomPropertyDelegate implements PropertyDelegate {
-		private final int[] data;
-		private final int itemsPerLevel;
-
-		CustomPropertyDelegate(int size, int itemsPerLevel) {
-			this.data = new int[size];
-			this.itemsPerLevel = itemsPerLevel;
-		}
-
-		@Override
-		public int get(int index) {
-			return data[index];
-		}
-
-		@Override
-		public void set(int index, int value) {
-			data[index] = value;
-		}
-
-		@Override
-		public int size() {
-			return data.length;
-		}
-	}
+	public boolean canUse(PlayerEntity player) { return this.inventory.canPlayerUse(player); }
 }

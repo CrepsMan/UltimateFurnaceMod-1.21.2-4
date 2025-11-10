@@ -11,7 +11,13 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.world.ServerWorld;
@@ -20,6 +26,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
@@ -144,6 +151,50 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 			world.addParticleClient(ParticleTypes.FLAME, d + i, e + j, f + k, 0.0, 0.0, 0.0);
 		}
 	}
+
+	@Override
+	public void onPlaced(World world, BlockPos pos, BlockState state, @Nullable LivingEntity placer, ItemStack stack) {
+		super.onPlaced(world, pos, state, placer, stack);
+		if (!world.isClient) {
+			BlockEntity be = world.getBlockEntity(pos);
+			if (be instanceof UltimateFurnaceBlockEntity furnace) {
+				NbtComponent data = stack.get(DataComponentTypes.CUSTOM_DATA);
+				if (data != null) {
+					NbtCompound tag = data.getNbt();
+					if (tag.contains("Level")) furnace.setLevel(tag.getInt("Level"));
+					if (tag.contains("SmeltCount")) furnace.setSmeltCount(tag.getInt("SmeltCount"));
+					if (tag.contains("StoredPower")) furnace.setStoredPower(tag.getInt("StoredPower"));
+				}
+			}
+		}
+	}
+
+	@Override
+	public BlockState onBreak(World world, BlockPos pos, BlockState state, PlayerEntity player) {
+		if (!world.isClient) {
+			BlockEntity be = world.getBlockEntity(pos);
+			if (be instanceof UltimateFurnaceBlockEntity furnace) {
+				if (furnace instanceof Inventory inv) {
+					ItemScatterer.spawn(world, pos, inv);
+				}
+				if (!player.isCreative()) {
+					ItemStack stack = new ItemStack(this);
+					NbtCompound tag = new NbtCompound();
+					tag.putInt("Level", furnace.getFurnaceLevel());
+					tag.putInt("SmeltCount", furnace.getSmeltCount());
+					tag.putInt("StoredPower", furnace.getStoredPower());
+					stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+					Block.dropStack(world, pos, stack);
+				}
+			}
+			world.removeBlock(pos, false);
+			return state;
+		}
+		return super.onBreak(world, pos, state, player);
+	}
+
+
+	// Removed manual drop; rely on loot table which now copies block entity data into item CUSTOM_DATA
 
 
 	static {

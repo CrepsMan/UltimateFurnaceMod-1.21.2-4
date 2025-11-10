@@ -3,18 +3,17 @@ package com.crepsman.ultimate_furnace.registry;
 import com.crepsman.ultimate_furnace.UltimateFurnaceMod;
 import com.crepsman.ultimate_furnace.blocks.CopperPlateBlock;
 import com.crepsman.ultimate_furnace.blocks.UltimateFurnaceBlock;
+import com.crepsman.ultimate_furnace.blocks.item.UltimateFurnaceBlockItem;
+import com.crepsman.ultimate_furnace.util.ModProperties;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
-import net.minecraft.block.MapColor;
-import net.minecraft.block.enums.NoteBlockInstrument;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.Item;
 import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
-import net.minecraft.sound.BlockSoundGroup;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.Pair;
 
@@ -28,7 +27,7 @@ public class ModBlocks {
 
 	public static void registerModBlocks() {
 		ULTIMATE_FURNACE = registerBlockWithItem("ultimate_furnace", UltimateFurnaceBlock::new, AbstractBlock.Settings.create().requiresTool().strength(3.5F).luminance(createLightLevelFromLitBlockState(13))).getLeft();
-		COPPER_PLATE = registerBlockWithItem("copper_plate", CopperPlateBlock::new, AbstractBlock.Settings.copy(Blocks.COPPER_BLOCK)).getLeft();
+		COPPER_PLATE = registerBlockWithItem("copper_plate", CopperPlateBlock::new, AbstractBlock.Settings.copy(Blocks.COPPER_BLOCK).luminance(state -> state.get(ModProperties.HOT) ? 12 : 0)).getLeft();
 	}
 
 	public static <T extends Item> T registerItem(String name, Function<Item.Settings, T> factory) {
@@ -55,9 +54,15 @@ public class ModBlocks {
 
 	public static <T extends Block> Pair<T, BlockItem> registerBlockWithItem(String name, Function<AbstractBlock.Settings, T> factory, AbstractBlock.Settings base) {
 		T block = registerBlock(name, factory, base);
+		BlockItem item;
+		if ("ultimate_furnace".equals(name)) {
+			item = registerItem(name, settings -> new UltimateFurnaceBlockItem(block, settings));
+		} else {
+			item = registerItem(name, settings -> new BlockItem(block, settings));
+		}
 		return new Pair<>(
 			block,
-			registerItem(name, settings -> new BlockItem(block, settings))
+			item
 		);
 	}
 }

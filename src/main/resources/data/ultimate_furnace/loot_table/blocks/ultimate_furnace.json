@@ -2,17 +2,11 @@
   "type": "minecraft:block",
   "pools": [
     {
-      "rolls": 1.0,
+      "rolls": 1,
       "entries": [
         {
           "type": "minecraft:item",
-          "name": "ultimate_furnace:ultimate_furnace",
-          "functions": [
-            {
-              "function": "minecraft:copy_name",
-              "source": "block_entity"
-            }
-          ]
+          "name": "ultimate_furnace:ultimate_furnace"
         }
       ],
       "conditions": [
