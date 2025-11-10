@@ -5,6 +5,7 @@ import com.crepsman.ultimate_furnace.registry.ModBlockEntities;
 import com.crepsman.ultimate_furnace.registry.ModScreenHandlers;
 import com.crepsman.ultimate_furnace.screen.UltimateFurnaceScreenHandler;
 import com.crepsman.ultimate_furnace.util.ModProperties;
+import com.crepsman.ultimate_furnace.util.FurnaceConfig;
 import net.minecraft.block.AbstractFurnaceBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
@@ -30,13 +31,10 @@ import net.minecraft.world.LightType;
 import net.minecraft.world.World;
 
 import java.util.Optional;
-import java.util.logging.Level;
 
 
 public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity implements SidedInventory {
-	private static final int MAX_LEVEL = 5;
-	private static final int ITEMS_PER_LEVEL = 3000;
-
+	// Removed hard-coded constants; now using FurnaceConfig
 	private int smeltCount = 0;
 	private int level = 1;
 	private int burnTime;
@@ -100,7 +98,8 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	}
 
 	private void levelUp() {
-		if (level < MAX_LEVEL) {
+		int maxLevel = FurnaceConfig.getMaxLevel();
+		if (level < maxLevel) {
 			level++;
 			smeltCount = 0;
 		}
@@ -130,14 +129,8 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		boolean newDayMode = isDay && hasDirectSkylight;
 
 		if (newDayMode && this.level > 1 && this.storedPower < getMaxStoredPower(this.level)) {
-			float powerGainRate = switch (this.level) {
-				case 2 -> 1.0f;
-				case 3 -> 2.0f;
-				case 4 -> 4.0f;
-				case 5 -> 5.0f;
-				default -> 0.0f;
-			};
-			this.storedPower = (int) Math.min(this.storedPower + powerGainRate, getMaxStoredPower(this.level));
+			int powerGainRate = FurnaceConfig.getPowerGainRateForLevel(this.level);
+			this.storedPower = Math.min(this.storedPower + powerGainRate, getMaxStoredPower(this.level));
 		}
 
 		BlockState currentState = world.getBlockState(pos);
@@ -161,7 +154,7 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			inputStack.decrement(1);
 			smeltCount++;
 			this.cookTime = 0; // Reset cook time
-			this.cookTimeTotal = getCookTime(this.world); // Set cook time based on level
+			this.cookTimeTotal = getCookTime(); // Set cook time based on level
 
 			// Decrement stored power
 			if (this.storedPower > 0) {
@@ -198,7 +191,7 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 				if (recipe != null) {
 					// Set cookTimeTotal when we start cooking or recipe changes
 					if (blockEntity.cookTime == 0) {
-						blockEntity.cookTimeTotal = blockEntity.getCookTime(world);
+						blockEntity.cookTimeTotal = blockEntity.getCookTime();
 					}
 
 					if (blockEntity.cookTime < blockEntity.cookTimeTotal) {
@@ -236,7 +229,9 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 			blockEntity.markDirty();
 		}
 
-		if (blockEntity.smeltCount >= ITEMS_PER_LEVEL * blockEntity.getFurnaceLevel()) {
+		// Leveling threshold from config
+		int requiredForNextLevel = FurnaceConfig.getItemsPerLevel() * blockEntity.getFurnaceLevel();
+		if (blockEntity.smeltCount >= requiredForNextLevel) {
 			blockEntity.levelUp();
 		}
 
@@ -293,15 +288,8 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		this.storedPower = nbt.getInt("StoredPower");
 	}
 
-	private int getCookTime(World world) {
-		return switch (this.level) {
-			case 1 -> 400; // 50% slower
-			case 2 -> 300; // 66% of normal speed
-			case 3 -> 200; // Normal speed
-			case 4 -> 100; // Twice the speed
-			case 5 -> 40;  // Five times the speed
-			default -> 200; // Fallback to normal speed
-		};
+	private int getCookTime() {
+		return FurnaceConfig.getCookTimeForLevel(this.level);
 	}
 
 	@Override
@@ -351,16 +339,7 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		return storedPower;
 	}
 
-
-
 	public static int getMaxStoredPower(int level) {
-		return switch (level) {
-			case 1 -> 0;
-			case 2 -> 6000;
-			case 3 -> 8000;
-			case 4 -> 12000;
-			case 5 -> 18000;
-			default -> 0;
-		};
+		return FurnaceConfig.getMaxStoredPowerForLevel(level);
 	}
 }

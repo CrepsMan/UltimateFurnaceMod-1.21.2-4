@@ -1,13 +1,7 @@
 {
-  "variants": {
-    "cold=false,hot=false": {
-      "model": "ultimate_furnace:block/copper_plate"
-    },
-    "cold=false,hot=true": {
-      "model": "ultimate_furnace:block/copper_plate_hot"
-    },
-    "cold=true,hot=false": {
-      "model": "ultimate_furnace:block/copper_plate_cold"
-    }
-  }
+  "multipart": [
+    { "when": { "hot": "true" }, "apply": { "model": "ultimate_furnace:block/copper_plate_hot" } },
+    { "when": { "hot": "false", "cold": "true" }, "apply": { "model": "ultimate_furnace:block/copper_plate_cold" } },
+    { "when": { "hot": "false", "cold": "false" }, "apply": { "model": "ultimate_furnace:block/copper_plate" } }
+  ]
 }
