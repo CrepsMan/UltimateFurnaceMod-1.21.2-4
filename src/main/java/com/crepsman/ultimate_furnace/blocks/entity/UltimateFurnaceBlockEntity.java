@@ -15,10 +15,8 @@ import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.nbt.NbtCompound;
 import net.minecraft.recipe.*;
-import net.minecraft.recipe.book.RecipeBookType;
 import net.minecraft.recipe.input.SingleStackRecipeInput;
 import net.minecraft.registry.DynamicRegistryManager;
-import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryWrapper;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandler;
@@ -241,7 +239,7 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	}
 	private Optional<RecipeEntry<SmeltingRecipe>> getFirstMatch(SingleStackRecipeInput input, World world) {
 		if (world instanceof ServerWorld serverWorld) {
-			ServerRecipeManager recipeManager = serverWorld.getRecipeManager();
+			RecipeManager recipeManager = serverWorld.getRecipeManager();
 			if (recipeManager == null || input == null) return Optional.empty();
 			return recipeManager.getFirstMatch(RecipeType.SMELTING, input, world);
 		}
@@ -304,32 +302,14 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 
 	@Override
 	public ScreenHandler createScreenHandler(int syncId, PlayerInventory playerInventory) {
-		if (world instanceof ServerWorld serverWorld) {
-			RecipeManager recipeManager = serverWorld.getRecipeManager();
-			RegistryKey<RecipePropertySet> key = RecipePropertySet.FURNACE_INPUT;
-
-			if (key == null) {
-				return null; // Return early to avoid processing with a null key
-			}
-
-			RecipePropertySet propertySet = recipeManager.getPropertySet(key);
-			if (propertySet == null) {
-				return null; // Return early to prevent further null reference issues
-			}
-
-			return new UltimateFurnaceScreenHandler(
-				ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER,
-				RecipeType.SMELTING,
-				key,
-				RecipeBookType.FURNACE,
-				syncId,
-				playerInventory,
-				this,
-				this.propertyDelegate
-			);
-		} else {
-			return null; // Return early to avoid further processing
-		}
+		return new UltimateFurnaceScreenHandler(
+			ModScreenHandlers.ULTIMATE_FURNACE_SCREEN_HANDLER,
+			RecipeType.SMELTING,
+			syncId,
+			playerInventory,
+			this,
+			this.propertyDelegate
+		);
 	}
 	public void setStoredPower(int storedPower) {
 		this.storedPower = storedPower;

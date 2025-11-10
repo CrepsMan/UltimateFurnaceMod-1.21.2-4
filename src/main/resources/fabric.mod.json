@@ -1,6 +1,6 @@
 {
 	"schemaVersion": 1,
-	"id": "ultimatefurnacemod",
+	"id": "ultimate_furnace",
 	"version": "1.3.3",
 	"name": "Ultimate Furnace",
 	"description": "The ultimate furnace mod!",
@@ -27,7 +27,7 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.16.9",
-		"minecraft": "1.21.x",
+		"minecraft": "1.21.1",
 		"java": ">=21",
 		"fabric-api": "*"
 	},

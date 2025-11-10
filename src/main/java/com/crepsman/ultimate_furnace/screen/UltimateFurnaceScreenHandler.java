@@ -6,9 +6,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.ItemStack;
 import net.minecraft.recipe.AbstractCookingRecipe;
 import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.book.RecipeBookType;
-import net.minecraft.recipe.RecipePropertySet;
-import net.minecraft.registry.RegistryKey;
+import net.minecraft.recipe.book.RecipeBookCategory;
 import net.minecraft.screen.AbstractFurnaceScreenHandler;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandlerType;
@@ -22,13 +20,29 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 	private final Inventory inventory;
 	private static final Logger LOGGER = Logger.getLogger(UltimateFurnaceScreenHandler.class.getName());
 
-	public UltimateFurnaceScreenHandler(ScreenHandlerType<?> type, RecipeType<? extends AbstractCookingRecipe> recipeType, RegistryKey<RecipePropertySet> recipePropertySetKey, RecipeBookType category, int syncId, PlayerInventory playerInventory, Inventory inventory, PropertyDelegate propertyDelegate) {
-		super(type, recipeType, recipePropertySetKey, category, syncId, playerInventory, inventory, propertyDelegate);
+	// Primary constructor using RecipeBookCategory (no RecipePropertySet dependency)
+	public UltimateFurnaceScreenHandler(ScreenHandlerType<?> type,
+									  RecipeType<? extends AbstractCookingRecipe> recipeType,
+									  RecipeBookCategory category,
+									  int syncId,
+									  PlayerInventory playerInventory,
+									  Inventory inventory,
+									  PropertyDelegate propertyDelegate) {
+		super(type, recipeType, category, syncId, playerInventory, inventory, propertyDelegate);
 		this.inventory = inventory;
 		this.customPropertyDelegate = propertyDelegate;
-
 		this.addProperties(customPropertyDelegate);
 		this.slots.set(1, new UltimateFurnaceFuelSlot(this.inventory, 1, 56, 53));
+	}
+
+	// Convenience constructor used by registry lambda
+	public UltimateFurnaceScreenHandler(ScreenHandlerType<?> type,
+									  RecipeType<? extends AbstractCookingRecipe> recipeType,
+									  int syncId,
+									  PlayerInventory playerInventory,
+									  Inventory inventory,
+									  PropertyDelegate propertyDelegate) {
+		this(type, recipeType, RecipeBookCategory.FURNACE, syncId, playerInventory, inventory, propertyDelegate);
 	}
 
 	public int getMaxSmeltCountForLevel() {
