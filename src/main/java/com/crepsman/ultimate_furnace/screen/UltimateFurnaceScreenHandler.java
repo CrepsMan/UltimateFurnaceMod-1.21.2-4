@@ -1,5 +1,7 @@
 package com.crepsman.ultimate_furnace.screen;
 
+import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
+import com.crepsman.ultimate_furnace.util.FurnaceConfig;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.Inventory;
@@ -12,12 +14,10 @@ import net.minecraft.registry.RegistryKey;
 import net.minecraft.screen.AbstractFurnaceScreenHandler;
 import net.minecraft.screen.PropertyDelegate;
 import net.minecraft.screen.ScreenHandlerType;
-import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
 
 import java.util.logging.Logger;
 
 public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
-	private static final int ITEMS_PER_LEVEL = 3000; // Define ITEMS_PER_LEVEL
 	private final PropertyDelegate customPropertyDelegate;
 	private final Inventory inventory;
 	private static final Logger LOGGER = Logger.getLogger(UltimateFurnaceScreenHandler.class.getName());
@@ -27,59 +27,54 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		this.inventory = inventory;
 		this.customPropertyDelegate = propertyDelegate;
 
-		this.addProperties(customPropertyDelegate);
+		// do not addProperties again; super already added the provided delegate
 		this.slots.set(1, new UltimateFurnaceFuelSlot(this.inventory, 1, 56, 53));
 	}
 
-
+	private int itemsPerLevel() {
+		// Use TXT config directly on client; in dev, client/server share the file
+		return FurnaceConfig.getItemsPerLevel();
+	}
 
 	public int getMaxSmeltCountForLevel() {
 		int level = getLevel();
-		return level < 5 ? ITEMS_PER_LEVEL * level : ITEMS_PER_LEVEL * 5;
+		int per = itemsPerLevel();
+		int cap = FurnaceConfig.getMaxLevel();
+		return per * Math.min(level, cap);
 	}
 
 	public int getLevel() {
-		return customPropertyDelegate.get(1); // Assuming index 1 is for level
+		return customPropertyDelegate.get(1);
 	}
 
 	public int getSmeltCount() {
-		return customPropertyDelegate.get(0); // Assuming index 0 is for smelt count
+		return customPropertyDelegate.get(0);
 	}
 
 	public int getBurnTime() {
-		return customPropertyDelegate.get(2); // Assuming index 2 is for burnTime
+		return customPropertyDelegate.get(2);
 	}
 
 	@Override
 	protected boolean isFuel(ItemStack itemStack) {
-		// Return false as this furnace does not use fuel
 		return false;
 	}
 
 	public int getSmeltCountProgress() {
 		int smeltCount = customPropertyDelegate.get(0);
 		int level = customPropertyDelegate.get(1);
-		int maxSmeltCount = ITEMS_PER_LEVEL * level;
+		int maxSmeltCount = itemsPerLevel() * Math.min(level, FurnaceConfig.getMaxLevel());
 		return maxSmeltCount > 0 ? smeltCount * 100 / maxSmeltCount : 0;
 	}
 
 	@Override
 	public boolean isBurning() {
-		// Get values from property delegate
 		int burnTime = customPropertyDelegate.get(2);
 		int cookTime = customPropertyDelegate.get(4);
 		int storedPower = customPropertyDelegate.get(3);
 		boolean hasInput = !inventory.getStack(0).isEmpty();
-
-		// Only show fire if:
-		// 1. Actually burning with burnTime, OR
-		// 2. Actively cooking something, OR
-		// 3. Has stored power AND input
-
-		if (burnTime > 0) return true;  // Always show flame if there's active burn time
-		if (cookTime > 0) return true;  // Always show flame if cooking is in progress
-
-		// Otherwise, only show flame if there's stored power AND input
+		if (burnTime > 0) return true;
+		if (cookTime > 0) return true;
 		return hasInput && storedPower > 0;
 	}
 	public int getStoredPower() {
@@ -88,7 +83,6 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 		return maxPower > 0 ? (int) (storedPower * 100.0f / maxPower) : 0;
 	}
 
-
 	public int getCookingProgress() {
 		int cookTime = customPropertyDelegate.get(4);
 		int cookTimeTotal = customPropertyDelegate.get(5);
@@ -96,11 +90,11 @@ public class UltimateFurnaceScreenHandler extends AbstractFurnaceScreenHandler {
 	}
 
 	protected boolean isSmeltable(ItemStack itemStack) {
-
 		return true;
 	}
+
 	public int getItemsPerLevel() {
-		return ITEMS_PER_LEVEL;
+		return itemsPerLevel();
 	}
 
 	@Override

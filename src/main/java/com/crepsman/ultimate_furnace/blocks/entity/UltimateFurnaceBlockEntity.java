@@ -4,11 +4,13 @@ import com.crepsman.ultimate_furnace.blocks.UltimateFurnaceBlock;
 import com.crepsman.ultimate_furnace.registry.ModBlockEntities;
 import com.crepsman.ultimate_furnace.registry.ModScreenHandlers;
 import com.crepsman.ultimate_furnace.screen.UltimateFurnaceScreenHandler;
+import com.crepsman.ultimate_furnace.util.FurnaceConfig;
 import com.crepsman.ultimate_furnace.util.ModProperties;
 import net.minecraft.block.AbstractFurnaceBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.AbstractFurnaceBlockEntity;
+import net.minecraft.entity.ExperienceOrbEntity;
 import net.minecraft.entity.player.PlayerInventory;
 import net.minecraft.inventory.SidedInventory;
 import net.minecraft.item.ItemStack;
@@ -26,16 +28,17 @@ import net.minecraft.text.Text;
 import net.minecraft.util.collection.DefaultedList;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
+import net.minecraft.util.math.Vec3d;
 import net.minecraft.world.LightType;
 import net.minecraft.world.World;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtInt;
 
 import java.util.Optional;
-import java.util.logging.Level;
 
 
 public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity implements SidedInventory {
 	private static final int MAX_LEVEL = 5;
-	private static final int ITEMS_PER_LEVEL = 3000;
 
 	private int smeltCount = 0;
 	private int level = 1;
@@ -43,6 +46,8 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	private int storedPower = 0;
 	private int cookTime;
 	private int cookTimeTotal;
+
+	private float xpBuffer = 0.0f;
 
 	private final PropertyDelegate propertyDelegate;
 
@@ -76,7 +81,7 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 
 			@Override
 			public int size() {
-				return 6;
+				return 6; // restore original size
 			}
 		};
 
@@ -100,7 +105,8 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	}
 
 	private void levelUp() {
-		if (level < MAX_LEVEL) {
+		int max = FurnaceConfig.getMaxLevel();
+		if (level < max) {
 			level++;
 			smeltCount = 0;
 		}
@@ -132,10 +138,16 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 
 			inputStack.decrement(1);
 			smeltCount++;
-			this.cookTime = 0; // Reset cook time
-			this.cookTimeTotal = getCookTime(this.world); // Set cook time based on level
-
-			// Decrement stored power
+			float recipeXp = recipe.value().getExperience();
+			if (recipeXp <= 0.0f) recipeXp = (float) FurnaceConfig.getXpPerItem();
+			xpBuffer += recipeXp;
+			if (this.world instanceof ServerWorld sw && xpBuffer >= 1.0f) {
+				int whole = (int) xpBuffer;
+				xpBuffer -= whole;
+				if (whole > 0) ExperienceOrbEntity.spawn(sw, Vec3d.ofCenter(this.pos), whole);
+			}
+			this.cookTime = 0;
+			this.cookTimeTotal = getCookTime(this.world);
 			if (this.storedPower > 0) {
 				this.storedPower--;
 			}
@@ -171,17 +183,10 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 
 		// Store power during day for furnace level > 1
 		if (newDayMode && this.level > 1) {
-			float powerGainRate = switch (this.level) {
-				case 2 -> 1.0f;
-				case 3 -> 2.0f;
-				case 4 -> 4.0f;
-				case 5 -> 5.0f;
-				default -> 0.0f;
-			};
-
-			int maxPower = getMaxStoredPower(this.level);
+			int powerGainRate = FurnaceConfig.getPowerGainRateForLevel(this.level);
+			int maxPower = FurnaceConfig.getMaxStoredPowerForLevel(this.level);
 			if (this.storedPower < maxPower) {
-				this.storedPower = Math.min(this.storedPower + (int)powerGainRate, maxPower);
+				this.storedPower = Math.min(this.storedPower + powerGainRate, maxPower);
 				markDirty();
 			}
 		}
@@ -288,10 +293,17 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 		}
 
 		if (stateChanged) {
+			// drop xp orbs based on buffer periodically
+			if (!world.isClient && blockEntity.xpBuffer >= 1.0f && world instanceof ServerWorld serverWorld) {
+				int whole = (int) blockEntity.xpBuffer;
+				blockEntity.xpBuffer -= whole;
+				if (whole > 0) ExperienceOrbEntity.spawn(serverWorld, Vec3d.ofCenter(pos), whole);
+			}
 			blockEntity.markDirty();
 		}
 
-		if (blockEntity.smeltCount >= ITEMS_PER_LEVEL * blockEntity.getFurnaceLevel()) {
+		int required = FurnaceConfig.getItemsPerLevel() * blockEntity.getFurnaceLevel();
+		if (blockEntity.smeltCount >= required) {
 			blockEntity.levelUp();
 		}
 	}
@@ -338,21 +350,15 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 	@Override
 	public void readNbt(NbtCompound nbt, RegistryWrapper.WrapperLookup lookup) {
 		super.readNbt(nbt, lookup);
-		this.smeltCount = nbt.getInt("SmeltCount", 0);
-		this.level = nbt.getInt("Level", 1);
-		this.burnTime = nbt.getInt("BurnTime", 0);
-		this.storedPower = nbt.getInt("StoredPower", 0);
+		NbtElement e;
+		e = nbt.get("SmeltCount"); this.smeltCount = e instanceof NbtInt ei ? ei.intValue() : 0;
+		e = nbt.get("Level"); this.level = e instanceof NbtInt li ? li.intValue() : 1;
+		e = nbt.get("BurnTime"); this.burnTime = e instanceof NbtInt bi ? bi.intValue() : 0;
+		e = nbt.get("StoredPower"); this.storedPower = e instanceof NbtInt pi ? pi.intValue() : 0;
 	}
 
 	private int getCookTime(World world) {
-		return switch (this.level) {
-			case 1 -> 400; // 50% slower
-			case 2 -> 300; // 66% of normal speed
-			case 3 -> 200; // Normal speed
-			case 4 -> 100; // Twice the speed
-			case 5 -> 40;  // Five times the speed
-			default -> 200; // Fallback to normal speed
-		};
+		return FurnaceConfig.getCookTimeForLevel(this.level);
 	}
 
 	@Override
@@ -405,13 +411,6 @@ public class UltimateFurnaceBlockEntity extends AbstractFurnaceBlockEntity imple
 
 
 	public static int getMaxStoredPower(int level) {
-		return switch (level) {
-			case 1 -> 0;
-			case 2 -> 6000;
-			case 3 -> 8000;
-			case 4 -> 12000;
-			case 5 -> 18000;
-			default -> 0;
-		};
+		return FurnaceConfig.getMaxStoredPowerForLevel(level);
 	}
 }

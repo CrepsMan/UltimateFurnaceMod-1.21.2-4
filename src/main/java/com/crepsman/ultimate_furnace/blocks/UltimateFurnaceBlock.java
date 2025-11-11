@@ -1,7 +1,9 @@
 package com.crepsman.ultimate_furnace.blocks;
 
 import com.crepsman.ultimate_furnace.blocks.entity.UltimateFurnaceBlockEntity;
+import com.crepsman.ultimate_furnace.item.UltimateFurnaceBlockItem;
 import com.crepsman.ultimate_furnace.registry.ModBlockEntities;
+import com.crepsman.ultimate_furnace.util.FurnaceConfig;
 import com.crepsman.ultimate_furnace.util.ModProperties;
 import com.mojang.serialization.MapCodec;
 import net.minecraft.block.AbstractBlock;
@@ -11,7 +13,14 @@ import net.minecraft.block.BlockState;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.block.entity.BlockEntityTicker;
 import net.minecraft.block.entity.BlockEntityType;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.nbt.NbtElement;
+import net.minecraft.nbt.NbtInt;
 import net.minecraft.particle.ParticleTypes;
 import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.server.world.ServerWorld;
@@ -20,6 +29,7 @@ import net.minecraft.sound.SoundEvents;
 import net.minecraft.stat.Stats;
 import net.minecraft.state.StateManager;
 import net.minecraft.state.property.BooleanProperty;
+import net.minecraft.util.ItemScatterer;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.util.math.random.Random;
@@ -55,10 +65,6 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 		builder.add(LIT, DAY_MODE, FACING);
 	}
 
-
-	public void onBlockTick(World world, BlockPos pos, BlockState state, UltimateFurnaceBlockEntity furnaceBlockEntity) {
-		UltimateFurnaceBlockEntity.tick(world, pos, state, furnaceBlockEntity);
-	}
 
 	protected void openScreen(World world, BlockPos pos, PlayerEntity player) {
 		BlockEntity blockEntity = world.getBlockEntity(pos);
@@ -143,6 +149,58 @@ public class UltimateFurnaceBlock extends AbstractFurnaceBlock {
 			world.addParticleClient(ParticleTypes.SMOKE, d + i, e + j, f + k, 0.0, 0.0, 0.0);
 			world.addParticleClient(ParticleTypes.FLAME, d + i, e + j, f + k, 0.0, 0.0, 0.0);
 		}
+	}
+
+	// Correct afterBreak override (1.21.5 signature) for custom preserved item drop
+	@Override
+	public void afterBreak(World world, PlayerEntity player, BlockPos pos, BlockState state, @Nullable BlockEntity blockEntity, ItemStack stack) {
+		if (!world.isClient && blockEntity instanceof UltimateFurnaceBlockEntity furnace) {
+			ItemScatterer.spawn(world, pos, furnace);
+			if (!player.isCreative()) {
+				ItemStack drop = new ItemStack(this);
+				NbtCompound tag = new NbtCompound();
+				tag.putInt("Level", furnace.getFurnaceLevel());
+				tag.putInt("SmeltCount", furnace.getSmeltCount());
+				tag.putInt("StoredPower", furnace.getStoredPower());
+				tag.putInt("ItemsPerLevel", FurnaceConfig.getItemsPerLevel());
+				int maxPower = FurnaceConfig.getMaxStoredPowerForLevel(furnace.getFurnaceLevel());
+				tag.putInt("MaxStoredPower", maxPower);
+				drop.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+				UltimateFurnaceBlockItem.applyDynamicLore(drop);
+				Block.dropStack(world, pos, drop);
+			}
+		}
+		// Skip super to prevent vanilla drop
+	}
+
+	@Override
+	public void onPlaced(World world, BlockPos pos, BlockState state, LivingEntity placer, ItemStack stack) {
+		if (!world.isClient) {
+			NbtComponent data = stack.get(DataComponentTypes.CUSTOM_DATA);
+			if (data != null) {
+				var raw = data.getNbt();
+				if (raw instanceof NbtCompound tag) {
+					BlockEntity be = world.getBlockEntity(pos);
+					if (be instanceof UltimateFurnaceBlockEntity furnace) {
+						NbtElement lvlE = tag.get("Level");
+						if (lvlE instanceof NbtInt lvl) furnace.setLevel(lvl.intValue());
+						NbtElement cntE = tag.get("SmeltCount");
+						if (cntE instanceof NbtInt cnt) furnace.setSmeltCount(cnt.intValue());
+						NbtElement powE = tag.get("StoredPower");
+						if (powE instanceof NbtInt pow) furnace.setStoredPower(pow.intValue());
+						if (!tag.contains("ItemsPerLevel")) {
+							tag.putInt("ItemsPerLevel", FurnaceConfig.getItemsPerLevel());
+						}
+						if (!tag.contains("MaxStoredPower")) {
+							int maxP = FurnaceConfig.getMaxStoredPowerForLevel(furnace.getFurnaceLevel());
+							tag.putInt("MaxStoredPower", maxP);
+						}
+						stack.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(tag));
+					}
+				}
+			}
+		}
+		super.onPlaced(world, pos, state, placer, stack);
 	}
 
 

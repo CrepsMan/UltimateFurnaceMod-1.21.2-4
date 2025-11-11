@@ -3,6 +3,7 @@ package com.crepsman.ultimate_furnace.registry;
 import com.crepsman.ultimate_furnace.UltimateFurnaceMod;
 import com.crepsman.ultimate_furnace.blocks.CopperPlateBlock;
 import com.crepsman.ultimate_furnace.blocks.UltimateFurnaceBlock;
+import com.crepsman.ultimate_furnace.item.UltimateFurnaceBlockItem;
 import net.minecraft.block.AbstractBlock;
 import net.minecraft.block.Block;
 import net.minecraft.block.Blocks;
@@ -55,9 +56,15 @@ public class ModBlocks {
 
 	public static <T extends Block> Pair<T, BlockItem> registerBlockWithItem(String name, Function<AbstractBlock.Settings, T> factory, AbstractBlock.Settings base) {
 		T block = registerBlock(name, factory, base);
+		BlockItem item;
+		if ("ultimate_furnace".equals(name)) {
+			item = registerItem(name, settings -> new UltimateFurnaceBlockItem(block, settings));
+		} else {
+			item = registerItem(name, settings -> new BlockItem(block, settings));
+		}
 		return new Pair<>(
 			block,
-			registerItem(name, settings -> new BlockItem(block, settings))
+			item
 		);
 	}
 }
